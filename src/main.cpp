@@ -10,5 +10,8 @@ extern std::vector<definition_ptr> program;
 int main() {
     yy::parser parser;
     parser.parse();
-    std::cout << program.size() << std::endl;
+
+    std::cout << "Success. " << program.size() << " definitions.\n";
+    for (auto const& definition: program)
+        definition->display(0);
 }
