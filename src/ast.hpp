@@ -112,6 +112,33 @@ struct ast_case : public ast {
     void display(int tabs) const;
 };
 
+struct ast_tuple : public ast {
+    std::vector<ast_ptr> terms;
+
+    ast_tuple(std::vector<ast_ptr> t)
+        : terms(std::move(t)) {}
+
+    void display(int tabs) const;
+};
+
+struct ast_list : public ast {
+    std::vector<ast_ptr> terms;
+
+    ast_list(std::vector<ast_ptr> t)
+        : terms(std::move(t)) {}
+
+    void display(int tabs) const;
+};
+
+struct ast_index : public ast {
+    ast_ptr index;
+
+    ast_index(ast_ptr i)
+        : index(std::move(i)) {}
+    
+    void display(int tabs) const;
+};
+
 struct pattern_var : public pattern {
     std::string var;
 

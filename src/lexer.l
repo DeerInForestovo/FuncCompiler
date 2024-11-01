@@ -25,10 +25,12 @@ of { return yy::parser::make_OF(); }
 \} { return yy::parser::make_CCURLY(); }
 \( { return yy::parser::make_OPAREN(); }
 \) { return yy::parser::make_CPAREN(); }
+\[ { return yy::parser::make_OSQUARE(); }
+\] { return yy::parser::make_CSQUARE(); }
 ,  { return yy::parser::make_COMMA(); }
 -> { return yy::parser::make_ARROW(); }
 = { return yy::parser::make_EQUAL(); }
-[a-z][a-zA-Z]* { return yy::parser::make_LID(std::string(yytext)); }
-[A-Z][a-zA-Z]* { return yy::parser::make_UID(std::string(yytext)); }
+[a-z][a-zA-Z_]* { return yy::parser::make_LID(std::string(yytext)); }
+[A-Z][a-zA-Z_]* { return yy::parser::make_UID(std::string(yytext)); }
 
 %%

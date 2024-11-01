@@ -84,7 +84,7 @@ void ast_app::display(int tabs) const {
 void ast_case::display(int tabs) const {
     display_tabs(tabs);
     display_structure("CASE");
-    std::cout << " " << (int)branches.size() << " branches" << std::endl;
+    std::cout << ' ' << (int)branches.size() << " branch(es)" << std::endl;
 
     display_tabs(tabs + 1);
     display_structure("OF: ");
@@ -95,6 +95,42 @@ void ast_case::display(int tabs) const {
     
     for (const auto& branch: branches)
         branch->display(tabs + 1);
+}
+
+void ast_tuple::display(int tabs) const {
+    display_tabs(tabs);
+    display_structure("TUPLE");
+    std::cout << ' ' << (int)terms.size() << " term(s)" << std::endl;
+
+    for (const auto& term: terms) {
+        display_tabs(tabs + 1);
+        display_structure("TERM");
+        std::cout << std::endl;
+        term->display(tabs + 1);
+        std::cout << std::endl;
+    }
+}
+
+void ast_list::display(int tabs) const {
+    display_tabs(tabs);
+    display_structure("LIST");
+    std::cout << ' ' << (int)terms.size() << " term(s)" << std::endl;
+
+    for (const auto& term: terms) {
+        display_tabs(tabs + 1);
+        display_structure("TERM");
+        std::cout << std::endl;
+        term->display(tabs + 1);
+        std::cout << std::endl;
+    }
+}
+
+void ast_index::display(int tabs) const {
+    display_tabs(tabs);
+    display_structure("INDEX");
+    std::cout << ' ';
+    index->display(0);
+    std::cout << std::endl;
 }
 
 void pattern_var::display() const {

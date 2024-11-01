@@ -24,6 +24,8 @@ extern yy::parser::symbol_type yylex();
 %token CCURLY
 %token OPAREN
 %token CPAREN
+%token OSQUARE
+%token CSQUARE
 %token COMMA
 %token ARROW
 %token EQUAL
@@ -38,11 +40,12 @@ extern yy::parser::symbol_type yylex();
 %type <std::vector<definition_ptr>> program definitions
 %type <std::vector<branch_ptr>> branches
 %type <std::vector<constructor_ptr>> constructors
-%type <ast_ptr> aAdd aMul case app appBase
+%type <ast_ptr> aAdd aMul case app appBase tuple list
 %type <definition_ptr> definition defn data 
 %type <branch_ptr> branch
 %type <pattern_ptr> pattern
 %type <constructor_ptr> constructor
+%type <std::vector<ast_ptr>> termlist
 
 %start program
 
@@ -101,6 +104,9 @@ appBase
     | UID { $$ = ast_ptr(new ast_uid(std::move($1))); }
     | OPAREN aAdd CPAREN { $$ = std::move($2); }
     | case { $$ = std::move($1); }
+    | tuple { $$ = std::move($1); }
+    | list { $$ = std::move($1); }
+    | OSQUARE aAdd CSQUARE { $$ = ast_ptr(new ast_index(std::move($2))); }
     ;
 
 case
@@ -138,4 +144,18 @@ constructors
 constructor
     : UID uppercaseParams
         { $$ = constructor_ptr(new constructor(std::move($1), std::move($2))); }
+    ;
+
+list
+    : OSQUARE CSQUARE { $$ = ast_ptr(new ast_list(std::vector<ast_ptr>())); }
+    | OSQUARE termlist COMMA CSQUARE { $$ = ast_ptr(new ast_list(std::move($2))); }
+    ;
+
+tuple
+    : OPAREN termlist COMMA CPAREN { $$ = ast_ptr(new ast_tuple(std::move($2))); }
+    ;
+
+termlist
+    : aAdd { $$ = std::vector<ast_ptr>(); $$.push_back(std::move($1)); }
+    | termlist COMMA aAdd { $$ = std::move($1); $$.push_back(std::move($3)); }
     ;

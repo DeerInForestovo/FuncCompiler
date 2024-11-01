@@ -11,7 +11,7 @@ int main() {
     yy::parser parser;
     parser.parse();
 
-    std::cout << "Success. " << program.size() << " definitions.\n";
+    std::cout << program.size() << " definitions.\n";
     for (auto const& definition: program)
         definition->display(0);
 }
