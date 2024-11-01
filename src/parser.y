@@ -109,7 +109,7 @@ case
     ;
 
 branches
-    : branches branch { $$ = std::move($1); $1.push_back(std::move($2)); }
+    : branches branch { $$ = std::move($1); $$.push_back(std::move($2)); }
     | branch { $$ = std::vector<branch_ptr>(); $$.push_back(std::move($1));}
     ;
 
