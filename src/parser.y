@@ -44,6 +44,8 @@ extern yy::parser::symbol_type yylex();
 %token DATA
 %token CASE
 %token OF
+%token DO
+%token RETURN
 %token OCURLY
 %token CCURLY
 %token OPAREN
@@ -52,6 +54,7 @@ extern yy::parser::symbol_type yylex();
 %token CSQUARE
 %token COMMA
 %token ARROW
+%token BIND
 %token EQUAL
 %token <std::string> LID
 %token <std::string> UID
@@ -64,11 +67,13 @@ extern yy::parser::symbol_type yylex();
 %type <std::vector<definition_ptr>> program definitions
 %type <std::vector<branch_ptr>> branches
 %type <std::vector<constructor_ptr>> constructors
+%type <std::vector<action_ptr>> actions
 %type <ast_ptr> aAdd aMul case app appBase tuple list aOr aAnd aBitor aXor aBitand aCmpeq aCmp aMove
 %type <definition_ptr> definition defn data 
 %type <branch_ptr> branch
 %type <pattern_ptr> pattern
 %type <constructor_ptr> constructor
+%type <action_ptr> action actionBase
 %type <std::vector<ast_ptr>> termlist
 
 %start program
@@ -93,6 +98,24 @@ defn
     : DEFN LID lowercaseParams EQUAL OCURLY aOr CCURLY
         { $$ = definition_ptr(
             new definition_defn(std::move($2), std::move($3), std::move($6))); }
+    | DEFN LID lowercaseParams EQUAL DO OCURLY actions CCURLY 
+        { $$ = definition_ptr(
+            new definition_defn_action(std::move($2), std::move($3), std::move($7))); }
+    ;
+
+actions
+    : actions action { $$ = std::move($1); $$.push_back(std::move($2)); }
+    | action { $$ = std::vector<action_ptr>(); $$.push_back(std::move($1)); }
+    ;
+
+action
+    : actionBase { $$ = std::move($1); }
+    | DEFN LID BIND actionBase { $$ = action_ptr(new action_bind(std::move($2), std::move($4))); }
+    ;
+
+actionBase
+    : OCURLY aOr CCURLY { $$ = action_ptr(new action_exec(std::move($2))); }
+    | RETURN OCURLY aOr CCURLY { $$ = action_ptr(new action_return(std::move($3))); }
     ;
 
 lowercaseParams
