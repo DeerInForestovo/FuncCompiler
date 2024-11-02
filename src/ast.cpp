@@ -165,6 +165,7 @@ void action_exec::display(int tabs) const {
     std::cout << std::endl;
 
     body->display(tabs + 1);
+    std::cout << std::endl;
 }
 
 void action_return::display(int tabs) const {
