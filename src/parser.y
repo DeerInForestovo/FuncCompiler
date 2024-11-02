@@ -15,7 +15,15 @@ extern yy::parser::symbol_type yylex();
 %token TIMES
 %token MINUS
 %token DIVIDE
-%token <int> INT
+%token <float> FLOATNUMBER
+%token <int> INTEGER
+%token TRUE
+%token FALSE
+%token <std::string> STRINGINSTANCE
+%token INT
+%token FLOAT
+%token BOOL
+%token STRING
 %token DEFN
 %token DATA
 %token CASE
@@ -99,7 +107,11 @@ app
     ;
 
 appBase
-    : INT { $$ = ast_ptr(new ast_int($1)); }
+    : FLOATNUMBER { $$ = ast_ptr(new ast_float($1)); }
+    | INTEGER { $$ = ast_ptr(new ast_int($1)); }
+    | STRINGINSTANCE { $$ = ast_ptr(new ast_string(std::move($1))); }
+    | TRUE { $$ = ast_ptr(new ast_bool(true)); }
+    | FALSE { $$ = ast_ptr(new ast_bool(false)); }
     | LID { $$ = ast_ptr(new ast_lid(std::move($1))); }
     | UID { $$ = ast_ptr(new ast_uid(std::move($1))); }
     | OPAREN aAdd CPAREN { $$ = std::move($2); }

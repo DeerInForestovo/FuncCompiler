@@ -63,6 +63,33 @@ struct ast_int : public ast {
     void display(int tabs) const;
 };
 
+struct ast_float : public ast {
+    float value;
+
+    explicit ast_float(float v)
+        : value(v) {}
+    
+    void display(int tabs) const;
+};
+
+struct ast_bool : public ast {
+    bool value;
+
+    explicit ast_bool(bool v)
+        : value(v) {}
+    
+    void display(int tabs) const;
+};
+
+struct ast_string : public ast {
+    std::string str;
+
+    explicit ast_string(std::string s)
+        : str(std::move(s)) {}
+    
+    void display(int tabs) const;
+};
+
 struct ast_lid : public ast {
     std::string id;
 

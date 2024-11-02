@@ -17,6 +17,10 @@ void display_function_name (const std::string &n) {  // red characters
     std::cout << "\033[1;31m" << n << "\033[0m";
 }
 
+void display_string (const std::string &n) {  // orange characters
+    std::cout << "\033[1;33m" << n << "\033[0m";
+}
+
 void branch::display(int tabs) const {
     display_tabs(tabs);
     display_structure("BRANCH: ");
@@ -42,6 +46,23 @@ void constructor::display(int tabs) const {
 void ast_int::display(int tabs) const {
     display_tabs(tabs);
     std::cout << value;
+}
+
+void ast_float::display(int tabs) const {
+    display_tabs(tabs);
+    std::cout << value;
+}
+
+void ast_bool::display(int tabs) const {
+    display_tabs(tabs);
+    std::cout << (value ? "TRUE" : "FALSE");
+}
+
+void ast_string::display(int tabs) const {
+    display_tabs(tabs);
+    std::cout << '"';
+    display_string(str);
+    std::cout << '"';
 }
 
 void ast_lid::display(int tabs) const {
