@@ -95,6 +95,11 @@ void ast_binop::display(int tabs) const {
     std::cout << std::endl;
 }
 
+void ast_uniop::display(int tabs) const {
+    display_tabs(tabs);
+    display_structure("UNIOP");
+}
+
 void ast_app::display(int tabs) const {
     display_tabs(tabs);
     left->display(0);

@@ -15,6 +15,22 @@ extern yy::parser::symbol_type yylex();
 %token TIMES
 %token MINUS
 %token DIVIDE
+%token BMOD
+%token BITAND
+%token BITOR
+%token BITNOT
+%token AND
+%token OR
+%token NOT
+%token XOR
+%token LT
+%token GT
+%token LEQ
+%token GEQ
+%token EQ
+%token NEQ
+%token LMOVE
+%token RMOVE
 %token <float> FLOATNUMBER
 %token <int> INTEGER
 %token TRUE
@@ -48,7 +64,7 @@ extern yy::parser::symbol_type yylex();
 %type <std::vector<definition_ptr>> program definitions
 %type <std::vector<branch_ptr>> branches
 %type <std::vector<constructor_ptr>> constructors
-%type <ast_ptr> aAdd aMul case app appBase tuple list
+%type <ast_ptr> aAdd aMul case app appBase tuple list aOr aAnd aBitor aXor aBitand aCmpeq aCmp aMove
 %type <definition_ptr> definition defn data 
 %type <branch_ptr> branch
 %type <pattern_ptr> pattern
@@ -74,7 +90,7 @@ definition
     ;
 
 defn
-    : DEFN LID lowercaseParams EQUAL OCURLY aAdd CCURLY
+    : DEFN LID lowercaseParams EQUAL OCURLY aOr CCURLY
         { $$ = definition_ptr(
             new definition_defn(std::move($2), std::move($3), std::move($6))); }
     ;
@@ -89,6 +105,51 @@ uppercaseParams
     | uppercaseParams UID { $$ = std::move($1); $$.push_back(std::move($2)); }
     ;
 
+aOr
+    : aOr OR aAnd { $$ = ast_ptr(new ast_binop(OR, std::move($1), std::move($3))); }
+    | aAnd { $$ = std::move($1); }
+    ;
+
+aAnd
+    : aAnd AND aBitor { $$ = ast_ptr(new ast_binop(AND, std::move($1), std::move($3))); }
+    | aBitor { $$ = std::move($1); }
+    ;
+
+aBitor
+    : aBitor BITOR aXor { $$ = ast_ptr(new ast_binop(BITOR, std::move($1), std::move($3))); }
+    | aXor { $$ = std::move($1); }
+    ;
+
+aXor
+    : aXor XOR aBitand { $$ = ast_ptr(new ast_binop(XOR, std::move($1), std::move($3))); }
+    | aBitand { $$ = std::move($1); }
+    ;
+
+aBitand
+    : aBitand BITAND aCmpeq { $$ = ast_ptr(new ast_binop(BITAND, std::move($1), std::move($3))); }
+    | aCmpeq { $$ = std::move($1); }
+    ;
+
+aCmpeq
+    : aCmpeq EQ aCmp { $$ = ast_ptr(new ast_binop(EQ, std::move($1), std::move($3))); }
+    | aCmpeq NEQ aCmp { $$ = ast_ptr(new ast_binop(NEQ, std::move($1), std::move($3))); }
+    | aCmp { $$ = std::move($1); }
+    ;
+
+aCmp
+    : aCmp LT aMove { $$ = ast_ptr(new ast_binop(LT, std::move($1), std::move($3))); }
+    | aCmp GT aMove { $$ = ast_ptr(new ast_binop(GT, std::move($1), std::move($3))); }
+    | aCmp LEQ aMove { $$ = ast_ptr(new ast_binop(LEQ, std::move($1), std::move($3))); }
+    | aCmp GEQ aMove { $$ = ast_ptr(new ast_binop(GEQ, std::move($1), std::move($3))); }
+    | aMove { $$ = std::move($1); }
+    ;
+
+aMove
+    : aMove LMOVE aAdd { $$ = ast_ptr(new ast_binop(LMOVE, std::move($1), std::move($3))); }
+    | aMove RMOVE aAdd { $$ = ast_ptr(new ast_binop(RMOVE, std::move($1), std::move($3))); }
+    | aAdd { $$ = std::move($1); }
+    ;
+
 aAdd
     : aAdd PLUS aMul { $$ = ast_ptr(new ast_binop(PLUS, std::move($1), std::move($3))); }
     | aAdd MINUS aMul { $$ = ast_ptr(new ast_binop(MINUS, std::move($1), std::move($3))); }
@@ -98,6 +159,7 @@ aAdd
 aMul
     : aMul TIMES app { $$ = ast_ptr(new ast_binop(TIMES, std::move($1), std::move($3))); }
     | aMul DIVIDE app { $$ = ast_ptr(new ast_binop(DIVIDE, std::move($1), std::move($3))); }
+    | aMul BMOD app { $$ = ast_ptr(new ast_binop(BMOD, std::move($1), std::move($3))); }
     | app { $$ = std::move($1); }
     ;
 
@@ -114,15 +176,17 @@ appBase
     | FALSE { $$ = ast_ptr(new ast_bool(false)); }
     | LID { $$ = ast_ptr(new ast_lid(std::move($1))); }
     | UID { $$ = ast_ptr(new ast_uid(std::move($1))); }
-    | OPAREN aAdd CPAREN { $$ = std::move($2); }
+    | OPAREN aOr CPAREN { $$ = std::move($2); }
     | case { $$ = std::move($1); }
     | tuple { $$ = std::move($1); }
     | list { $$ = std::move($1); }
-    | OSQUARE aAdd CSQUARE { $$ = ast_ptr(new ast_index(std::move($2))); }
+    | OSQUARE aOr CSQUARE { $$ = ast_ptr(new ast_index(std::move($2))); }
+    | NOT { $$ = ast_ptr(new ast_uniop(NOT)); }
+    | BITNOT { $$ = ast_ptr(new ast_uniop(BITNOT)); }
     ;
 
 case
-    : CASE aAdd OF OCURLY branches CCURLY 
+    : CASE aOr OF OCURLY branches CCURLY 
         { $$ = ast_ptr(new ast_case(std::move($2), std::move($5))); }
     ;
 
@@ -132,7 +196,7 @@ branches
     ;
 
 branch
-    : pattern ARROW OCURLY aAdd CCURLY
+    : pattern ARROW OCURLY aOr CCURLY
         { $$ = branch_ptr(new branch(std::move($1), std::move($4))); }
     ;
 
@@ -168,6 +232,6 @@ tuple
     ;
 
 termlist
-    : aAdd { $$ = std::vector<ast_ptr>(); $$.push_back(std::move($1)); }
-    | termlist COMMA aAdd { $$ = std::move($1); $$.push_back(std::move($3)); }
+    : aOr { $$ = std::vector<ast_ptr>(); $$.push_back(std::move($1)); }
+    | termlist COMMA aOr { $$ = std::move($1); $$.push_back(std::move($3)); }
     ;

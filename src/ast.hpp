@@ -48,10 +48,13 @@ struct definition {
 using definition_ptr = std::unique_ptr<definition>;
 
 enum binop {
-    PLUS,
-    MINUS,
-    TIMES,
-    DIVIDE
+    PLUS, MINUS, TIMES, DIVIDE, BMOD,
+    LMOVE, RMOVE, BITAND, BITOR, AND, OR, XOR,
+    LT, GT, LEQ, GEQ, EQ, NEQ,
+};
+
+enum uniop {
+    NOT, BITNOT,
 };
 
 struct ast_int : public ast {
@@ -116,6 +119,15 @@ struct ast_binop : public ast {
     ast_binop(binop o, ast_ptr l, ast_ptr r)
         : op(o), left(std::move(l)), right(std::move(r)) {}
     
+    void display(int tabs) const;
+};
+
+struct ast_uniop : public ast {
+    uniop op;
+
+    ast_uniop(uniop o)
+        : op(o) {}
+
     void display(int tabs) const;
 };
 
