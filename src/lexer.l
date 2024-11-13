@@ -45,6 +45,8 @@ defn { return yy::parser::make_DEFN(); }
 data { return yy::parser::make_DATA(); }
 case { return yy::parser::make_CASE(); }
 of { return yy::parser::make_OF(); }
+do { return yy::parser::make_DO(); }
+return { return yy::parser::make_RETURN(); }
 True { return yy::parser::make_TRUE(); }
 False { return yy::parser::make_FALSE(); }
 int { return yy::parser::make_INT(); }
@@ -59,6 +61,7 @@ bool { return yy::parser::make_BOOL(); }
 \] { return yy::parser::make_CSQUARE(); }
 ,  { return yy::parser::make_COMMA(); }
 -> { return yy::parser::make_ARROW(); }
+\<- { return yy::parser::make_BIND(); }
 = { return yy::parser::make_EQUAL(); }
 [a-z][a-zA-Z_]* { return yy::parser::make_LID(std::string(yytext)); }
 [A-Z][a-zA-Z_]* { return yy::parser::make_UID(std::string(yytext)); }
