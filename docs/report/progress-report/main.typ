@@ -164,6 +164,6 @@ Refer to Python, we decide to use `,)` and `,]` as the right close token of tupl
 
 = Implementation Progress
 
-== Lexical Analyzer
+== Lexical Analyzer and Parser
 
 #lorem(20)
