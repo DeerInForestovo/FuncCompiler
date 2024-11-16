@@ -1,0 +1,21 @@
+defn hello = {"hello world!"}
+defn hello = {"hello world!\\\""}
+
+defn true_or_false = {True || False}
+
+defn sum a = {
+    case a of {
+        Nil -> {0}
+        Cons lhs rhs -> {lhs + func rhs}
+    }
+}
+
+defn get a b = {a[b]}
+
+defn make_tuple a b = {(a, b, )}
+
+defn make_list a b c = {[a, b, c, ]}
+
+data Color = {Red, Green, Blue}
+
+data List = {Nil, Cons Int List}

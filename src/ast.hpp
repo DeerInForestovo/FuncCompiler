@@ -61,7 +61,7 @@ enum binop {
 };
 
 enum uniop {
-    NOT, BITNOT,
+    NOT, BITNOT, NEGATE
 };
 
 struct ast_int : public ast {
