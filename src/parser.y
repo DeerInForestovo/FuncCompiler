@@ -74,6 +74,7 @@ extern yy::parser::symbol_type yylex();
 %type <constructor_ptr> constructor
 %type <action_ptr> action actionBase
 %type <std::vector<ast_ptr>> termlist termlistLong
+%type <std::string> extendedUID
 
 %start program
 
@@ -125,13 +126,21 @@ actionBase
 lowercaseParams
     : %empty { $$ = std::vector<std::string>(); }
     | lowercaseParams LID { $$ = std::move($1); $$.push_back(std::move($2)); }
-    | lowercaseParams UID error { REPORT_ERROR("LID expected, but UID found, recovered."); }
+    | lowercaseParams extendedUID error { REPORT_ERROR("LID expected, but UID found, recovered."); }
     ;
 
 uppercaseParams
     : %empty { $$ = std::vector<std::string>(); }
-    | uppercaseParams UID { $$ = std::move($1); $$.push_back(std::move($2)); }
+    | uppercaseParams extendedUID { $$ = std::move($1); $$.push_back(std::move($2)); }
     | uppercaseParams LID error { REPORT_ERROR("UID expected, but LID found, recovered."); }
+    ;
+
+extendedUID
+    : UID { $$ = std::move($1); }
+    | INT { $$ = "Int"; }
+    | STRING { $$ = "String"; }
+    | FLOAT { $$ = "Float"; }
+    | BOOL {$$ = "Bool"; }
     ;
 
 aOr
@@ -204,7 +213,7 @@ appBase
     | TRUE { $$ = ast_ptr(new ast_bool(true)); }
     | FALSE { $$ = ast_ptr(new ast_bool(false)); }
     | LID { $$ = ast_ptr(new ast_lid(std::move($1))); }
-    | UID { $$ = ast_ptr(new ast_uid(std::move($1))); }
+    | extendedUID { $$ = ast_ptr(new ast_uid(std::move($1))); }
     | OPAREN aOr CPAREN { $$ = std::move($2); }
     | case { $$ = std::move($1); }
     | tuple { $$ = std::move($1); }
@@ -237,14 +246,14 @@ branch
 
 pattern
     : LID { $$ = pattern_ptr(new pattern_var(std::move($1))); }
-    | UID lowercaseParams
+    | extendedUID lowercaseParams
         { $$ = pattern_ptr(new pattern_constr(std::move($1), std::move($2))); }
     ;
 
 data
-    : DATA UID EQUAL OCURLY constructors CCURLY
+    : DATA extendedUID EQUAL OCURLY constructors CCURLY
         { $$ = definition_ptr(new definition_data(std::move($2), std::move($5))); }
-    | DATA UID EQUAL OCURLY constructors error { REPORT_ERROR("Unmatched '{', recovered."); }
+    | DATA extendedUID EQUAL OCURLY constructors error { REPORT_ERROR("Unmatched '{', recovered."); }
     ;
 
 constructors
@@ -254,7 +263,7 @@ constructors
     ;
 
 constructor
-    : UID uppercaseParams
+    : extendedUID uppercaseParams
         { $$ = constructor_ptr(new constructor(std::move($1), std::move($2))); }
     ;
 

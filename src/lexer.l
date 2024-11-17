@@ -63,10 +63,10 @@ do { UPDATE_LINE_ID return yy::parser::make_DO(); }
 return { UPDATE_LINE_ID return yy::parser::make_RETURN(); }
 True { UPDATE_LINE_ID return yy::parser::make_TRUE(); }
 False { UPDATE_LINE_ID return yy::parser::make_FALSE(); }
-int { UPDATE_LINE_ID return yy::parser::make_INT(); }
-string { UPDATE_LINE_ID return yy::parser::make_STRING(); }
-float { UPDATE_LINE_ID return yy::parser::make_FLOAT(); }
-bool { UPDATE_LINE_ID return yy::parser::make_BOOL(); }
+Int { UPDATE_LINE_ID return yy::parser::make_INT(); }
+String { UPDATE_LINE_ID return yy::parser::make_STRING(); }
+Float { UPDATE_LINE_ID return yy::parser::make_FLOAT(); }
+Bool { UPDATE_LINE_ID return yy::parser::make_BOOL(); }
 \{ { UPDATE_LINE_ID return yy::parser::make_OCURLY(); }
 \} { UPDATE_LINE_ID return yy::parser::make_CCURLY(); }
 \( { UPDATE_LINE_ID return yy::parser::make_OPAREN(); }
