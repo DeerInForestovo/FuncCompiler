@@ -77,7 +77,7 @@ type_ptr ast_binop::typecheck(type_mgr& mgr) {
 
 void ast_app::print(int indent, std::ostream& to) const {
     print_indent(indent, to);
-    to << "APP:" << std::endl;
+    to << "APP: " << std::endl;
     left->print(indent + 1, to);
     right->print(indent + 1, to);
 }
