@@ -47,11 +47,21 @@ struct definition {
 
 using definition_ptr = std::unique_ptr<definition>;
 
+struct action {
+    virtual ~action() = default;
+    virtual void display(int tabs) const = 0;
+};
+
+using action_ptr = std::unique_ptr<action>;
+
 enum binop {
-    PLUS,
-    MINUS,
-    TIMES,
-    DIVIDE
+    PLUS, MINUS, TIMES, DIVIDE, BMOD,
+    LMOVE, RMOVE, BITAND, BITOR, AND, OR, XOR,
+    LT, GT, LEQ, GEQ, EQ, NEQ,
+};
+
+enum uniop {
+    NOT, BITNOT, NEGATE
 };
 
 struct ast_int : public ast {
@@ -119,6 +129,15 @@ struct ast_binop : public ast {
     void display(int tabs) const;
 };
 
+struct ast_uniop : public ast {
+    uniop op;
+
+    ast_uniop(uniop o)
+        : op(o) {}
+
+    void display(int tabs) const;
+};
+
 struct ast_app : public ast {
     ast_ptr left;
     ast_ptr right;
@@ -166,6 +185,34 @@ struct ast_index : public ast {
     void display(int tabs) const;
 };
 
+struct action_exec : public action {
+    ast_ptr body;
+
+    action_exec(ast_ptr i)
+        : body(std::move(i)) {}
+    
+    void display(int tabs) const;
+};
+
+struct action_return : public action {
+    ast_ptr body;
+
+    action_return(ast_ptr i)
+        : body(std::move(i)) {}
+    
+    void display(int tabs) const;
+};
+
+struct action_bind : public action {
+    std::string name;
+    action_ptr act;
+
+    action_bind(std::string n, action_ptr i)
+        : name(std::move(n)), act(std::move(i)) {}
+    
+    void display(int tabs) const;
+};
+
 struct pattern_var : public pattern {
     std::string var;
 
@@ -193,6 +240,17 @@ struct definition_defn : public definition {
     definition_defn(std::string n, std::vector<std::string> p, ast_ptr b)
         : name(std::move(n)), params(std::move(p)), body(std::move(b)) {}
     
+    void display(int tabs) const;
+};
+
+struct definition_defn_action : public definition {
+    std::string name;
+    std::vector<std::string> params;
+    std::vector<action_ptr> body;
+
+    definition_defn_action(std::string n, std::vector<std::string> p, std::vector<action_ptr> b)
+        : name(std::move(n)), params(std::move(p)), body(std::move(b)) {}
+
     void display(int tabs) const;
 };
 

@@ -95,6 +95,11 @@ void ast_binop::display(int tabs) const {
     std::cout << std::endl;
 }
 
+void ast_uniop::display(int tabs) const {
+    display_tabs(tabs);
+    display_structure("UNIOP");
+}
+
 void ast_app::display(int tabs) const {
     display_tabs(tabs);
     left->display(0);
@@ -154,6 +159,34 @@ void ast_index::display(int tabs) const {
     std::cout << std::endl;
 }
 
+void action_exec::display(int tabs) const {
+    display_tabs(tabs);
+    display_structure("EXEC: ");
+    std::cout << std::endl;
+
+    body->display(tabs + 1);
+    std::cout << std::endl;
+}
+
+void action_return::display(int tabs) const {
+    display_tabs(tabs);
+    display_structure("RETURN: ");
+    std::cout << std::endl;
+
+    body->display(tabs + 1);
+    std::cout << std::endl;
+}
+
+void action_bind::display(int tabs) const {
+    display_tabs(tabs);
+    display_structure("BIND ");
+    display_function_name(name);
+    std::cout << ' ';
+
+    act->display(tabs);
+    std::cout << std::endl;
+}
+
 void pattern_var::display() const {
     display_structure("PATTERN_VAR: ");
     std::cout << var;
@@ -176,6 +209,18 @@ void definition_defn::display(int tabs) const {
 
     body->display(tabs + 1);
     std::cout << std::endl;
+}
+
+void definition_defn_action::display(int tabs) const {
+    display_tabs(tabs);
+    display_structure("DEFN: ");
+    display_function_name(name);
+    for (const auto& param: params)
+        std::cout << ' ' << param;
+    std::cout << std::endl;
+
+    for (const auto& action: body)
+        action->display(tabs + 1);
 }
 
 void definition_data::display(int tabs) const {
