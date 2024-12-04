@@ -1,17 +1,25 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include "type.hpp"
+#include "env.hpp"
 
 struct ast {  // AST: Abstract Syntax Tree
     virtual ~ast() = default;
-    virtual void display(int tabs) const = 0;
+    // Display
+    virtual void display(int tabs) const;
+    // Type Checking
+    virtual type_ptr typecheck(type_mgr& mgr, const type_env& env) const;
 };
 
 using ast_ptr = std::unique_ptr<ast>;
 
 struct pattern {
     virtual ~pattern() = default;
-    virtual void display() const = 0;  // always inline
+    // Display
+    virtual void display() const;  // always inline
+    // Type Checking
+    virtual void match(type_ptr t, type_mgr& mgr, type_env& env) const;
 };
 
 using pattern_ptr = std::unique_ptr<pattern>;
@@ -42,14 +50,20 @@ using constructor_ptr = std::unique_ptr<constructor>;
 
 struct definition {
     virtual ~definition() = default;
-    virtual void display(int tabs) const = 0;
+    type_ptr return_type;
+    std::vector<type_ptr> param_types;
+    // Display
+    virtual void display(int tabs) const;
+    // Type Checking
+    virtual void typecheck_first(type_mgr& mgr, type_env& env);
+    virtual void typecheck_second(type_mgr& mgr, const type_env& env) const;
 };
 
 using definition_ptr = std::unique_ptr<definition>;
 
 struct action {
     virtual ~action() = default;
-    virtual void display(int tabs) const = 0;
+    virtual void display(int tabs) const;
 };
 
 using action_ptr = std::unique_ptr<action>;
@@ -71,6 +85,7 @@ struct ast_int : public ast {
         : value(v) {}
     
     void display(int tabs) const;
+    type_ptr typecheck(type_mgr& mgr, const type_env& env) const;
 };
 
 struct ast_float : public ast {
@@ -80,6 +95,7 @@ struct ast_float : public ast {
         : value(v) {}
     
     void display(int tabs) const;
+    type_ptr typecheck(type_mgr& mgr, const type_env& env) const;
 };
 
 struct ast_bool : public ast {
@@ -89,6 +105,7 @@ struct ast_bool : public ast {
         : value(v) {}
     
     void display(int tabs) const;
+    type_ptr typecheck(type_mgr& mgr, const type_env& env) const;
 };
 
 struct ast_string : public ast {
@@ -98,6 +115,7 @@ struct ast_string : public ast {
         : str(std::move(s)) {}
     
     void display(int tabs) const;
+    type_ptr typecheck(type_mgr& mgr, const type_env& env) const;
 };
 
 struct ast_lid : public ast {
@@ -107,6 +125,7 @@ struct ast_lid : public ast {
         : id(std::move(i)) {}
     
     void display(int tabs) const;
+    type_ptr typecheck(type_mgr& mgr, const type_env& env) const;
 };
 
 struct ast_uid : public ast {
@@ -116,6 +135,7 @@ struct ast_uid : public ast {
         : id(std::move(i)) {}
     
     void display(int tabs) const;
+    type_ptr typecheck(type_mgr& mgr, const type_env& env) const;
 };
 
 struct ast_binop : public ast {
@@ -127,6 +147,7 @@ struct ast_binop : public ast {
         : op(o), left(std::move(l)), right(std::move(r)) {}
     
     void display(int tabs) const;
+    type_ptr typecheck(type_mgr& mgr, const type_env& env) const;
 };
 
 struct ast_uniop : public ast {
@@ -146,6 +167,7 @@ struct ast_app : public ast {
         : left(std::move(l)), right(std::move(r)) {}
     
     void display(int tabs) const;
+    type_ptr typecheck(type_mgr& mgr, const type_env& env) const;
 };
 
 struct ast_case : public ast {
@@ -156,6 +178,7 @@ struct ast_case : public ast {
         : of(std::move(o)), branches(std::move(b)) {}
     
     void display(int tabs) const;
+    type_ptr typecheck(type_mgr& mgr, const type_env& env) const;
 };
 
 struct ast_tuple : public ast {
@@ -220,6 +243,7 @@ struct pattern_var : public pattern {
         : var(std::move(v)) {}
     
     void display() const;
+    void match(type_ptr t, type_mgr& mgr, type_env& env) const;
 };
 
 struct pattern_constr : public pattern {
@@ -230,6 +254,7 @@ struct pattern_constr : public pattern {
         : constr(std::move(c)), params(std::move(p)) {}
     
     void display() const;
+    void match(type_ptr t, type_mgr& mgr, type_env& env) const;
 };
 
 struct definition_defn : public definition {
@@ -241,6 +266,8 @@ struct definition_defn : public definition {
         : name(std::move(n)), params(std::move(p)), body(std::move(b)) {}
     
     void display(int tabs) const;
+    void typecheck_first(type_mgr& mgr, type_env& env);
+    void typecheck_second(type_mgr& mgr, const type_env& env) const;
 };
 
 struct definition_defn_action : public definition {
@@ -252,6 +279,8 @@ struct definition_defn_action : public definition {
         : name(std::move(n)), params(std::move(p)), body(std::move(b)) {}
 
     void display(int tabs) const;
+    void typecheck_first(type_mgr& mgr, type_env& env);
+    void typecheck_second(type_mgr& mgr, const type_env& env) const;
 };
 
 struct definition_data : public definition {
@@ -262,4 +291,6 @@ struct definition_data : public definition {
         : name(std::move(n)), constructors(std::move(cs)) {}
     
     void display(int tabs) const;
+    void typecheck_first(type_mgr& mgr, type_env& env);
+    void typecheck_second(type_mgr& mgr, const type_env& env) const;
 };
