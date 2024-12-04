@@ -1,0 +1,7 @@
+defn add a b = {a + b}
+
+defn increase = {add 1}
+
+defn fun_a = {1 == increase 0}
+
+defn fun_b = {1.0 == increase 0.0}

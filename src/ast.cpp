@@ -1,5 +1,6 @@
 #include "ast.hpp"
 #include <iostream>
+#include <map>
 
 /* 
  * Display
@@ -76,8 +77,13 @@ void ast_uid::display(int tabs) const {
 }
 
 void ast_binop::display(int tabs) const {
+    static std::map<binop, std::string> opNames = {
+        {PLUS, "+"}, {MINUS, "-"}, {TIMES, "*"}, {DIVIDE, "/"}, {BMOD, "%"},
+        {LMOVE, "<<"}, {RMOVE, ">>"}, {BITAND, "&"}, {BITOR, "|"}, {AND, "&&"}, {OR, "||"}, {XOR, "^"},
+        {LT, "<"}, {GT, ">"}, {LEQ, "<="}, {GEQ, ">="}, {EQ, "=="}, {NEQ, "!="}
+    };
     display_tabs(tabs);
-    display_structure("BINOP");
+    display_structure("BINOP " + opNames[op]);
     std::cout << std::endl;
 
     display_tabs(tabs + 1);
@@ -96,8 +102,11 @@ void ast_binop::display(int tabs) const {
 }
 
 void ast_uniop::display(int tabs) const {
+    static std::map<uniop, std::string> opNames = {
+        {NOT, "!"}, {BITNOT, "~"}, {NEGATE, "-"}
+    };
     display_tabs(tabs);
-    display_structure("UNIOP");
+    display_structure("UNIOP " + opNames[op]);
 }
 
 void ast_app::display(int tabs) const {

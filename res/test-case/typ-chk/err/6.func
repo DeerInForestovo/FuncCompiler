@@ -1,0 +1,6 @@
+defn foo = {
+    case 1 of {
+        True -> {1}
+        False -> {0}
+    }
+}
