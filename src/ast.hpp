@@ -5,6 +5,7 @@
 #include "type.hpp"
 #include "type_env.hpp"
 #include "binop.hpp"
+#include "uniop.hpp"
 #include "env.hpp"
 
 struct ast {
