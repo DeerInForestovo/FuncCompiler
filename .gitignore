@@ -2,3 +2,5 @@ compiler
 .vscode/
 input.txt
 input.func
+src/build
+src/examples
