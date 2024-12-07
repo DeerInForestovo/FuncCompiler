@@ -68,8 +68,8 @@ extern yy::parser::symbol_type yylex();
 %type <std::vector<std::string>> lowercaseParams
 %type <std::vector<branch_ptr>> branches
 %type <std::vector<constructor_ptr>> constructors
-%type <action_ptr> action actionBase
-%type <std::vector<action_ptr>> actions
+// %type <action_ptr> action actionBase
+// %type <std::vector<action_ptr>> actions
 %type <std::vector<parsed_type_ptr>> typeList
 %type <parsed_type_ptr> type nonArrowType typeListElement
 %type <ast_ptr> aAdd aMul case app appBase tuple list aOr aAnd aBitor aXor aBitand aCmpeq aCmp aMove
@@ -101,32 +101,32 @@ definition
 
 defn
     : DEFN LID lowercaseParams EQUAL OCURLY aOr CCURLY
-        { $$ = definition_ptr(
+        { $$ = definition_defn_ptr(
             new definition_defn(std::move($2), std::move($3), std::move($6))); }
-    | DEFN LID lowercaseParams EQUAL DO OCURLY actions CCURLY 
-        { $$ = definition_ptr(
-            new definition_defn_action(std::move($2), std::move($3), std::move($7))); }
-    | DEFN LID lowercaseParams EQUAL OCURLY aOr error { REPORT_ERROR("Unmatched '{', recovered."); }
-    | DEFN LID lowercaseParams EQUAL DO OCURLY actions error { REPORT_ERROR("Unmatched '{', recovered."); }
-    | DEFN LID lowercaseParams EQUAL OCURLY error CCURLY { REPORT_ERROR("Illegal expr, recovered."); }
+    // | DEFN LID lowercaseParams EQUAL DO OCURLY actions CCURLY 
+    //     { $$ = definition_ptr(
+    //         new definition_defn_action(std::move($2), std::move($3), std::move($7))); }
+    | DEFN LID lowercaseParams EQUAL OCURLY aOr error { REPORT_ERROR("Unmatched '{'."); }
+    // | DEFN LID lowercaseParams EQUAL DO OCURLY actions error { REPORT_ERROR("Unmatched '{'."); }
+    | DEFN LID lowercaseParams EQUAL OCURLY error CCURLY { REPORT_ERROR("Illegal expr."); }
     ;
 
-actions
-    : actions action { $$ = std::move($1); $$.push_back(std::move($2)); }
-    | action { $$ = std::vector<action_ptr>(); $$.push_back(std::move($1)); }
-    ;
+// actions
+//     : actions action { $$ = std::move($1); $$.push_back(std::move($2)); }
+//     | action { $$ = std::vector<action_ptr>(); $$.push_back(std::move($1)); }
+//     ;
 
-action
-    : actionBase { $$ = std::move($1); }
-    | DEFN LID BIND actionBase { $$ = action_ptr(new action_bind(std::move($2), std::move($4))); }
-    ;
+// action
+//     : actionBase { $$ = std::move($1); }
+//     | DEFN LID BIND actionBase { $$ = action_ptr(new action_bind(std::move($2), std::move($4))); }
+//     ;
 
-actionBase
-    : OCURLY aOr CCURLY { $$ = action_ptr(new action_exec(std::move($2))); }
-    | RETURN OCURLY aOr CCURLY { $$ = action_ptr(new action_return(std::move($3))); }
-    | OCURLY error CCURLY { REPORT_ERROR("Illegal expr, recovered."); }
-    | RETURN OCURLY error CCURLY { REPORT_ERROR("Illegal expr, recovered."); }
-    ;
+// actionBase
+//     : OCURLY aOr CCURLY { $$ = action_ptr(new action_exec(std::move($2))); }
+//     | RETURN OCURLY aOr CCURLY { $$ = action_ptr(new action_return(std::move($3))); }
+//     | OCURLY error CCURLY { REPORT_ERROR("Illegal expr."); }
+//     | RETURN OCURLY error CCURLY { REPORT_ERROR("Illegal expr."); }
+//     ;
 
 lowercaseParams
     : %empty { $$ = std::vector<std::string>(); }
@@ -206,19 +206,19 @@ app
 appBase
     : FLOATNUMBER { $$ = ast_ptr(new ast_float($1)); }
     | INTEGER { $$ = ast_ptr(new ast_int($1)); }
-    | STRINGINSTANCE { $$ = ast_ptr(new ast_string(std::move($1))); }
-    | TRUE { $$ = ast_ptr(new ast_bool(true)); }
-    | FALSE { $$ = ast_ptr(new ast_bool(false)); }
+    // | STRINGINSTANCE { $$ = ast_ptr(new ast_string(std::move($1))); }
+    // | TRUE { $$ = ast_ptr(new ast_bool(true)); }
+    // | FALSE { $$ = ast_ptr(new ast_bool(false)); }
     | LID { $$ = ast_ptr(new ast_lid(std::move($1))); }
     | extendedUID { $$ = ast_ptr(new ast_uid(std::move($1))); }
     | OPAREN aOr CPAREN { $$ = std::move($2); }
     | case { $$ = std::move($1); }
-    | tuple { $$ = std::move($1); }
-    | list { $$ = std::move($1); }
-    | OSQUARE aOr CSQUARE { $$ = ast_ptr(new ast_index(std::move($2))); }
-    | MINUS %prec NEGATE { $$ = ast_ptr(new ast_uniop(NEGATE)); }
-    | NOT { $$ = ast_ptr(new ast_uniop(NOT)); }
-    | BITNOT { $$ = ast_ptr(new ast_uniop(BITNOT)); }
+    // | tuple { $$ = std::move($1); }
+    // | list { $$ = std::move($1); }
+    // | OSQUARE aOr CSQUARE { $$ = ast_ptr(new ast_index(std::move($2))); }
+    // | MINUS %prec NEGATE { $$ = ast_ptr(new ast_uniop(NEGATE)); }
+    // | NOT { $$ = ast_ptr(new ast_uniop(NOT)); }
+    // | BITNOT { $$ = ast_ptr(new ast_uniop(BITNOT)); }
     | OPAREN error CPAREN { REPORT_ERROR("Illegal expression."); }
     | OSQUARE error CSQUARE { REPORT_ERROR("Illegal expression."); }
     ;
@@ -285,25 +285,25 @@ typeList
     | typeList typeListElement { $$ = std::move($1); $$.push_back(std::move($2)); }
     ;
 
-list
-    : OSQUARE CSQUARE { $$ = ast_ptr(new ast_list(std::vector<ast_ptr>())); }
-    | OSQUARE termlist COMMA CSQUARE { $$ = ast_ptr(new ast_list(std::move($2))); }
-    | OSQUARE termlist COMMA error { REPORT_ERROR("Unmatched '['."); }
-    | OSQUARE termlist CSQUARE error { REPORT_ERROR("Missing ','."); }
-    ;
+// list
+//     : OSQUARE CSQUARE { $$ = ast_ptr(new ast_list(std::vector<ast_ptr>())); }
+//     | OSQUARE termlist COMMA CSQUARE { $$ = ast_ptr(new ast_list(std::move($2))); }
+//     | OSQUARE termlist COMMA error { REPORT_ERROR("Unmatched '['."); }
+//     | OSQUARE termlist CSQUARE error { REPORT_ERROR("Missing ','."); }
+//     ;
 
-tuple
-    : OPAREN termlist COMMA CPAREN { $$ = ast_ptr(new ast_tuple(std::move($2))); }
-    | OPAREN termlist COMMA error { REPORT_ERROR("Unmatched '('."); }
-    | OPAREN termlist CPAREN error { REPORT_ERROR("Missing ','."); }
-    ;
+// tuple
+//     : OPAREN termlist COMMA CPAREN { $$ = ast_ptr(new ast_tuple(std::move($2))); }
+//     | OPAREN termlist COMMA error { REPORT_ERROR("Unmatched '('."); }
+//     | OPAREN termlist CPAREN error { REPORT_ERROR("Missing ','."); }
+//     ;
 
 // len(termlist) >= 2 with out a comma, error
 // termlistLong 
 //     : termlist COMMA aOr { $$ = std::move($1); $$.push_back(std::move($3)); }
 //     ;
 
-termlist
-    : aOr { $$ = std::vector<ast_ptr>(); $$.push_back(std::move($1)); }
-    | termlist COMMA aOr { $$ = std::move($1); $$.push_back(std::move($3)); }
-    ;
+// termlist
+//     : aOr { $$ = std::vector<ast_ptr>(); $$.push_back(std::move($1)); }
+//     | termlist COMMA aOr { $$ = std::move($1); $$.push_back(std::move($3)); }
+//     ;

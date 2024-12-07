@@ -31,14 +31,11 @@ struct definition_defn {
     type_ptr return_type;
 
     definition_defn(std::string n, std::vector<std::string> p, ast_ptr b)
-        : name(std::move(n)), params(std::move(p)), body(std::move(b)) {
-
-    }
+        : name(std::move(n)), params(std::move(p)), body(std::move(b)) {}
 
     void find_free(type_mgr& mgr, type_env_ptr& env);
     void insert_types(type_mgr& mgr);
     void typecheck(type_mgr& mgr);
-    void compile();
 };
 
 using definition_defn_ptr = std::unique_ptr<definition_defn>;

@@ -52,6 +52,39 @@ struct ast_int : public ast {
     type_ptr typecheck(type_mgr& mgr);
 };
 
+struct ast_float : public ast {
+    float value;
+
+    explicit ast_float(float v)
+        : value(v) {}
+
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
+};
+
+struct ast_bool : public ast {
+    bool value;
+
+    explicit ast_bool(bool v)
+        : value(v) {}
+
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
+};
+
+struct ast_string : public ast {
+    std::string str;
+
+    explicit ast_string(std::string s)
+        : str(std::move(s)) {}
+
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
+};
+
 struct ast_lid : public ast {
     std::string id;
 

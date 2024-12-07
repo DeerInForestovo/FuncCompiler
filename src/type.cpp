@@ -3,6 +3,7 @@
 #include <sstream>
 #include <algorithm>
 #include <vector>
+#include <iostream>
 #include "error.hpp"
 
 void type_scheme::print(const type_mgr& mgr, std::ostream& to) const {
@@ -16,11 +17,15 @@ void type_scheme::print(const type_mgr& mgr, std::ostream& to) const {
     monotype->print(mgr, to);
 }
 
+void type_scheme::set_num_type() {
+    num_type = true;
+}
+
 type_ptr type_scheme::instantiate(type_mgr& mgr) const {
     if(forall.size() == 0) return monotype;
     std::map<std::string, type_ptr> subst;
     for(auto& var : forall) {
-        subst[var] = mgr.new_type();
+        subst[var] = num_type ? mgr.new_num_type() : mgr.new_type();
     }
     return mgr.substitute(subst, monotype);
 }
@@ -32,6 +37,10 @@ void type_var::print(const type_mgr& mgr, std::ostream& to) const {
     } else {
         to << name;
     }
+}
+
+void type_var::set_num_type() {
+    num_type = true;
 }
 
 void type_base::print(const type_mgr& mgr, std::ostream& to) const {
@@ -71,6 +80,12 @@ type_ptr type_mgr::new_type() {
     return type_ptr(new type_var(new_type_name()));
 }
 
+type_ptr type_mgr::new_num_type() {
+    auto type_num_var = new type_var(new_type_name());
+    type_num_var->set_num_type();
+    return type_ptr(type_num_var);
+}
+
 type_ptr type_mgr::new_arrow_type() {
     return type_ptr(new type_arr(new_type(), new_type()));
 }
@@ -102,11 +117,9 @@ void type_mgr::unify(type_ptr l, type_ptr r) {
     r = resolve(r, rvar);
 
     if(lvar) {
-        bind(lvar->name, r);
-        return;
+        if (bind(lvar, r)) return;
     } else if(rvar) {
-        bind(rvar->name, l);
-        return;
+        if (bind(rvar, l)) return;
     } else if((larr = dynamic_cast<type_arr*>(l.get())) &&
             (rarr = dynamic_cast<type_arr*>(r.get()))) {
         unify(larr->left, rarr->left);
@@ -164,11 +177,22 @@ type_ptr type_mgr::substitute(const std::map<std::string, type_ptr>& subst, cons
     return t;
 }
 
-void type_mgr::bind(const std::string& s, type_ptr t) {
-    type_var* other = dynamic_cast<type_var*>(t.get());
-    
-    if(other && other->name == s) return;
-    types[s] = t;
+bool type_mgr::bind(type_var* s, type_ptr t) {
+    std::cout << "bind s=" << s->name << std::endl;
+    type_var* tvar = dynamic_cast<type_var*>(t.get());
+    if (tvar && tvar->name == s->name) return true;  // No need to bind
+    if (s->num_type) {
+        if (tvar) {
+            tvar->set_num_type();  // Pass num_type tag
+        } else {
+            type_base* tid = dynamic_cast<type_base*>(t.get());
+            if (!tid) return std::cout << "error: Bind num_type to app/arr" << std::endl, false;
+            if (tid->name != "Int" && tid->name != "Float")
+                return std::cout << "error: Bind num_type to not Int*/Float*" << std::endl, false;
+        }
+    }
+    types[s->name] = t;
+    return true;
 }
 
 void type_mgr::find_free(const type_ptr& t, std::set<std::string>& into) const {

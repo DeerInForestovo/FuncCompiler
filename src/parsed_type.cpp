@@ -26,7 +26,6 @@ type_ptr parsed_type_var::to_type(
     return type_ptr(new type_var(var));
 }
 
-
 type_ptr parsed_type_arr::to_type(
         const std::set<std::string>& vars,
         const type_env& env) const {

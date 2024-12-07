@@ -1,5 +1,5 @@
 #include "ast.hpp"
-#include <ostream>
+#include <iostream>
 #include "binop.hpp"
 #include "error.hpp"
 #include "type_env.hpp"
@@ -18,7 +18,21 @@ void ast_int::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>&
 }
 
 type_ptr ast_int::typecheck(type_mgr& mgr) {
-    return type_ptr(new type_app(env->lookup_type("Int")));
+    return type_ptr(new type_app(mgr.new_num_type()));
+    // return type_ptr(new type_app(env->lookup_type("Int")));
+}
+
+void ast_float::print(int indent, std::ostream& to) const {
+    print_indent(indent, to);
+    to << "FLOAT: " << value << std::endl;
+}
+
+void ast_float::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into) {
+    this->env = env;
+}
+
+type_ptr ast_float::typecheck(type_mgr& mgr) {
+    return type_ptr(new type_app(env->lookup_type("Float")));
 }
 
 void ast_lid::print(int indent, std::ostream& to) const {
@@ -71,6 +85,9 @@ type_ptr ast_binop::typecheck(type_mgr& mgr) {
     type_ptr arrow_one = type_ptr(new type_arr(rtype, return_type));
     type_ptr arrow_two = type_ptr(new type_arr(ltype, arrow_one));
 
+    std::cout << "unify binop" << std::endl;
+    arrow_two->print(mgr, std::cout); std::cout << std::endl;
+    ftype->print(mgr, std::cout); std::cout << std::endl;
     mgr.unify(arrow_two, ftype);
     return return_type;
 }
