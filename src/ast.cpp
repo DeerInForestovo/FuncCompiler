@@ -261,8 +261,6 @@ type_ptr ast_do::typecheck(type_mgr &mgr) {
     type_ptr last_type;
     for (auto& action: actions) {
         last_type = action->typecheck(mgr);
-        last_type->print(mgr, std::cout);
-        std::cout << std::endl;
     }
 
     mgr.unify(return_type, last_type);
