@@ -21,6 +21,23 @@ struct ast {
 
 using ast_ptr = std::unique_ptr<ast>;
 
+struct action {
+    std::string bind_name;
+    ast_ptr expr;
+    type_env_ptr env;
+
+    action(ast_ptr o) : expr(std::move(o)) {}
+    action(std::string n, ast_ptr o): bind_name(std::move(n)), expr(std::move(o)) {}
+
+    virtual ~action() = default;
+
+    virtual void print(int indent, std::ostream& to) const = 0;
+    void insert_binding(type_mgr& mgr, type_env_ptr& env);
+    virtual type_ptr typecheck(type_mgr& mgr) = 0;
+};
+
+using action_ptr = std::unique_ptr<action>;
+
 struct pattern {
     virtual ~pattern() = default;
 
@@ -63,16 +80,20 @@ struct ast_float : public ast {
     type_ptr typecheck(type_mgr& mgr);
 };
 
-// struct ast_bool : public ast {
-//     bool value;
+/*
 
-//     explicit ast_bool(bool v)
-//         : value(v) {}
+struct ast_bool : public ast {
+    bool value;
 
-//     void print(int indent, std::ostream& to) const;
-//     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
-//     type_ptr typecheck(type_mgr& mgr);
-// };
+    explicit ast_bool(bool v)
+        : value(v) {}
+
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
+};
+
+*/
 
 struct ast_char : public ast {
     char value;
@@ -181,6 +202,30 @@ struct ast_app : public ast {
 
     void print(int indent, std::ostream& to) const;
     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
+};
+
+struct ast_do : public ast {
+    std::vector<action_ptr> actions;
+
+    ast_do(std::vector<action_ptr> a) : actions(std::move(a)) {}
+
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
+};
+
+struct action_exec : public action {
+    using action::action;
+
+    void print(int indent, std::ostream& to) const;
+    type_ptr typecheck(type_mgr& mgr);
+};
+
+struct action_return : public action {
+    using action::action;
+
+    void print(int indent, std::ostream& to) const;
     type_ptr typecheck(type_mgr& mgr);
 };
 
