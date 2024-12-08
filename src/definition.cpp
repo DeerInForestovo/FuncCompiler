@@ -3,6 +3,7 @@
 #include "ast.hpp"
 #include "type.hpp"
 #include "type_env.hpp"
+#include <algorithm>
 
 void definition_defn::find_free(type_mgr& mgr, type_env_ptr& env) {
     this->env = env;
@@ -59,7 +60,9 @@ void definition_data::insert_constructors() const {
         }
 
         type_scheme_ptr full_scheme(new type_scheme(std::move(full_type)));
-        full_scheme->forall.insert(full_scheme->forall.begin(), vars.begin(), vars.end());
+        full_scheme->forall.reserve(vars.size());
+        std::transform(vars.begin(), vars.end(), std::back_inserter(full_scheme->forall), 
+            [](std::string var) { return std::make_pair(var, false); });
         env->bind(constructor->name, full_scheme);
     }
 }

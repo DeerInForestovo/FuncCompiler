@@ -37,7 +37,7 @@ void type_env::generalize(const std::string& name, type_mgr& mgr) {
     if(names_it == names.end()) throw 0;
     if(names_it->second->forall.size() > 0) throw 0;
 
-    std::set<std::string> free_variables;
+    std::set<std::pair<std::string, bool>> free_variables;
     mgr.find_free(names_it->second->monotype, free_variables);
     for(auto& free : free_variables) {
         names_it->second->forall.push_back(free);

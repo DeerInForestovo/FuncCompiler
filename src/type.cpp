@@ -10,22 +10,18 @@ void type_scheme::print(const type_mgr& mgr, std::ostream& to) const {
     if(forall.size() != 0) {
         to << "forall ";
         for(auto& var : forall) {
-            to << var << " ";
+            to << var.first << (var.second ? "(Num) " :  " ");
         }
         to << ". ";
     }
     monotype->print(mgr, to);
 }
 
-void type_scheme::set_num_type() {
-    num_type = true;
-}
-
 type_ptr type_scheme::instantiate(type_mgr& mgr) const {
     if(forall.size() == 0) return monotype;
     std::map<std::string, type_ptr> subst;
     for(auto& var : forall) {
-        subst[var] = num_type ? mgr.new_num_type() : mgr.new_type();
+        subst[var.first] = var.second ? mgr.new_num_type() : mgr.new_type();
     }
     return mgr.substitute(subst, monotype);
 }
@@ -195,12 +191,12 @@ bool type_mgr::bind(type_var* s, type_ptr t) {
     return true;
 }
 
-void type_mgr::find_free(const type_ptr& t, std::set<std::string>& into) const {
+void type_mgr::find_free(const type_ptr& t, std::set<std::pair<std::string, bool>>& into) const {
     type_var* var;
     type_ptr resolved = resolve(t, var);
 
     if(var) {
-        into.insert(var->name);
+        into.emplace(var->name, var->num_type);
     } else if(type_arr* arr = dynamic_cast<type_arr*>(resolved.get())) {
         find_free(arr->left, into);
         find_free(arr->right, into);

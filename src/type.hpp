@@ -16,14 +16,12 @@ struct type {
 using type_ptr = std::shared_ptr<type>;
 
 struct type_scheme {
-    std::vector<std::string> forall;
+    std::vector<std::pair<std::string, bool>> forall;
     type_ptr monotype;
-    bool num_type;
 
-    type_scheme(type_ptr type) : forall(), num_type(false), monotype(std::move(type)) {}
+    type_scheme(type_ptr type) : forall(), monotype(std::move(type)) {}
 
     void print(const type_mgr& mgr, std::ostream& to) const;
-    void set_num_type();
     type_ptr instantiate(type_mgr& mgr) const;
 };
 
@@ -96,5 +94,5 @@ struct type_mgr {
             const type_ptr& t) const;
     type_ptr resolve(type_ptr t, type_var*& var) const;
     bool bind(type_var* s, type_ptr t);  // return bind success or not
-    void find_free(const type_ptr& t, std::set<std::string>& into) const;
+    void find_free(const type_ptr& t, std::set<std::pair<std::string, bool>>& into) const;
 };

@@ -75,12 +75,12 @@ void typecheck_program(
     io_app->arguments.push_back(arg_type);
 
     type_scheme_ptr io_scheme_ptr(new type_scheme(io_type_app));
-    io_scheme_ptr->forall.push_back("IOArg");
+    io_scheme_ptr->forall.emplace_back("IOArg", false);
     env->bind("IOSimpleCons", io_scheme_ptr);
 
     type_ptr io_bind_app(new type_arr(arg_type, io_type_app));
     type_scheme_ptr io_bind_scheme_ptr(new type_scheme(io_bind_app));
-    io_bind_scheme_ptr->forall.push_back("IOArg");
+    io_bind_scheme_ptr->forall.emplace_back("IOArg", false);
     env->bind("IOBindCons", io_bind_scheme_ptr);
 
     // insert all data definitions
@@ -100,8 +100,7 @@ void typecheck_program(
     type_ptr num_op_type = type_ptr(new type_arr(num_type_app, type_ptr(
             new type_arr(num_type_app, num_type_app))));
     type_scheme_ptr num_op_type_ptr = type_scheme_ptr(new type_scheme(std::move(num_op_type)));
-    num_op_type_ptr->forall.push_back("Num");
-    num_op_type_ptr->set_num_type();
+    num_op_type_ptr->forall.emplace_back("Num", true);
     env->bind("+", num_op_type_ptr);
     env->bind("-", num_op_type_ptr);
     env->bind("*", num_op_type_ptr);
@@ -110,8 +109,7 @@ void typecheck_program(
     type_ptr num_cmp_type = type_ptr(new type_arr(num_type_app, type_ptr(
             new type_arr(num_type_app, bool_type_app))));
     type_scheme_ptr num_cmp_type_ptr = type_scheme_ptr(new type_scheme(std::move(num_cmp_type)));
-    num_cmp_type_ptr->forall.push_back("Num");
-    num_cmp_type_ptr->set_num_type();
+    num_cmp_type_ptr->forall.emplace_back("Num", true);
     env->bind("<", num_cmp_type_ptr);
     env->bind(">", num_cmp_type_ptr);
     env->bind("<=", num_cmp_type_ptr);
@@ -122,7 +120,7 @@ void typecheck_program(
     type_ptr any_cmp_type = type_ptr(new type_arr(any_type_app, type_ptr(
             new type_arr(any_type_app, bool_type_app))));
     type_scheme_ptr any_cmp_type_ptr = type_scheme_ptr(new type_scheme(std::move(any_cmp_type)));
-    any_cmp_type_ptr->forall.push_back("Any");
+    any_cmp_type_ptr->forall.emplace_back("Any", false);
     env->bind("==", any_cmp_type_ptr);
     env->bind("!=", any_cmp_type_ptr);
 
@@ -145,8 +143,7 @@ void typecheck_program(
     // std::cout << "Bind num_uniop types:" << std::endl;
     type_ptr num_uniop_type = type_ptr(new type_arr(num_type_app, num_type_app));
     type_scheme_ptr num_uniop_type_ptr = type_scheme_ptr(new type_scheme(std::move(num_uniop_type)));
-    num_uniop_type_ptr->forall.push_back("Num");
-    num_uniop_type_ptr->set_num_type();
+    num_uniop_type_ptr->forall.emplace_back("Num", true);
     env->bind("--", num_uniop_type_ptr);
 
     // std::cout << "Bind int_uniop types:" << std::endl;
@@ -178,7 +175,7 @@ void typecheck_program(
     type_ptr print_var_type = type_ptr(new type_var("PrintVar"));
     type_ptr print_type(new type_arr(print_var_type, io_empty_type));
     type_scheme_ptr print_scheme_ptr(new type_scheme(print_type));
-    print_scheme_ptr->forall.push_back("PrintVar");
+    print_scheme_ptr->forall.emplace_back("PrintVar", false);
     env->bind("print", print_scheme_ptr);
     prelude_func.insert("print");
 
