@@ -1,4 +1,4 @@
-defn fun_a a = {a + 1}
+defn fun_a a = {a + 1 + 2}
 
 defn fun_b a b = {(a + -1) * .2 + (b - 3.4e-2) / 5.6}
 

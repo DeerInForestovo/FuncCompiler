@@ -1,17 +1,32 @@
+#pragma once
 #include <memory>
 #include <vector>
-#include <string>
+#include <set>
+#include "type.hpp"
+#include "type_env.hpp"
+#include "binop.hpp"
+#include "uniop.hpp"
+#include "env.hpp"
 
-struct ast {  // AST: Abstract Syntax Tree
+struct ast {
+    type_env_ptr env;
+
     virtual ~ast() = default;
-    virtual void display(int tabs) const = 0;
+
+    virtual void print(int indent, std::ostream& to) const = 0;
+    virtual void find_free(type_mgr& mgr,
+        type_env_ptr& env, std::set<std::string>& into) = 0;
+    virtual type_ptr typecheck(type_mgr& mgr) = 0;
 };
 
 using ast_ptr = std::unique_ptr<ast>;
 
 struct pattern {
     virtual ~pattern() = default;
-    virtual void display() const = 0;  // always inline
+
+    virtual void print(std::ostream& to) const = 0;
+    virtual void insert_bindings(type_mgr& mgr, type_env_ptr& env) const = 0;
+    virtual void typecheck(type_ptr t, type_mgr& mgr, type_env_ptr& env) const = 0;
 };
 
 using pattern_ptr = std::unique_ptr<pattern>;
@@ -22,55 +37,19 @@ struct branch {
 
     branch(pattern_ptr p, ast_ptr a)
         : pat(std::move(p)), expr(std::move(a)) {}
-    
-    void display(int tabs) const;
 };
 
 using branch_ptr = std::unique_ptr<branch>;
-
-struct constructor {
-    std::string name;
-    std::vector<std::string> types;
-
-    constructor(std::string n, std::vector<std::string> ts)
-        : name(std::move(n)), types(std::move(ts)) {}
-    
-    void display(int tabs) const;
-};
-
-using constructor_ptr = std::unique_ptr<constructor>;
-
-struct definition {
-    virtual ~definition() = default;
-    virtual void display(int tabs) const = 0;
-};
-
-using definition_ptr = std::unique_ptr<definition>;
-
-struct action {
-    virtual ~action() = default;
-    virtual void display(int tabs) const = 0;
-};
-
-using action_ptr = std::unique_ptr<action>;
-
-enum binop {
-    PLUS, MINUS, TIMES, DIVIDE, BMOD,
-    LMOVE, RMOVE, BITAND, BITOR, AND, OR, XOR,
-    LT, GT, LEQ, GEQ, EQ, NEQ,
-};
-
-enum uniop {
-    NOT, BITNOT, NEGATE
-};
 
 struct ast_int : public ast {
     int value;
 
     explicit ast_int(int v)
         : value(v) {}
-    
-    void display(int tabs) const;
+
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
 };
 
 struct ast_float : public ast {
@@ -78,26 +57,72 @@ struct ast_float : public ast {
 
     explicit ast_float(float v)
         : value(v) {}
-    
-    void display(int tabs) const;
+
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
 };
 
-struct ast_bool : public ast {
-    bool value;
+// struct ast_bool : public ast {
+//     bool value;
 
-    explicit ast_bool(bool v)
+//     explicit ast_bool(bool v)
+//         : value(v) {}
+
+//     void print(int indent, std::ostream& to) const;
+//     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+//     type_ptr typecheck(type_mgr& mgr);
+// };
+
+struct ast_char : public ast {
+    char value;
+
+    explicit ast_char(char v)
         : value(v) {}
-    
-    void display(int tabs) const;
+
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
 };
 
-struct ast_string : public ast {
-    std::string str;
+struct ast_list : public ast {
+    std::vector<ast_ptr> arr;
 
-    explicit ast_string(std::string s)
-        : str(std::move(s)) {}
-    
-    void display(int tabs) const;
+    explicit ast_list(std::vector<ast_ptr> a)
+        : arr(std::move(a)) {}
+
+    explicit ast_list(std::string s) {
+        arr = std::vector<ast_ptr>();
+        for (char c : s) arr.push_back(ast_ptr(new ast_char(c)));
+    }
+
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
+};
+
+struct ast_connect : public ast {
+    ast_ptr left;
+    ast_ptr right;
+
+    ast_connect(ast_ptr l, ast_ptr r)
+        : left(std::move(l)), right(std::move(r)) {}
+
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
+};
+
+struct ast_index : public ast {
+    ast_ptr arr;
+    ast_ptr ind;
+
+    ast_index(ast_ptr a, ast_ptr i)
+        : arr(std::move(a)), ind(std::move(i)) {}
+
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
 };
 
 struct ast_lid : public ast {
@@ -105,8 +130,10 @@ struct ast_lid : public ast {
 
     explicit ast_lid(std::string i)
         : id(std::move(i)) {}
-    
-    void display(int tabs) const;
+
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
 };
 
 struct ast_uid : public ast {
@@ -114,8 +141,10 @@ struct ast_uid : public ast {
 
     explicit ast_uid(std::string i)
         : id(std::move(i)) {}
-    
-    void display(int tabs) const;
+
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
 };
 
 struct ast_binop : public ast {
@@ -125,17 +154,22 @@ struct ast_binop : public ast {
 
     ast_binop(binop o, ast_ptr l, ast_ptr r)
         : op(o), left(std::move(l)), right(std::move(r)) {}
-    
-    void display(int tabs) const;
+
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
 };
 
 struct ast_uniop : public ast {
     uniop op;
+    ast_ptr opd;
 
-    ast_uniop(uniop o)
-        : op(o) {}
+    ast_uniop(uniop o, ast_ptr od)
+        : op(o), opd(std::move(od)) {}
 
-    void display(int tabs) const;
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
 };
 
 struct ast_app : public ast {
@@ -144,73 +178,23 @@ struct ast_app : public ast {
 
     ast_app(ast_ptr l, ast_ptr r)
         : left(std::move(l)), right(std::move(r)) {}
-    
-    void display(int tabs) const;
+
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
 };
 
 struct ast_case : public ast {
     ast_ptr of;
+    type_ptr input_type;
     std::vector<branch_ptr> branches;
 
     ast_case(ast_ptr o, std::vector<branch_ptr> b)
         : of(std::move(o)), branches(std::move(b)) {}
-    
-    void display(int tabs) const;
-};
 
-struct ast_tuple : public ast {
-    std::vector<ast_ptr> terms;
-
-    ast_tuple(std::vector<ast_ptr> t)
-        : terms(std::move(t)) {}
-
-    void display(int tabs) const;
-};
-
-struct ast_list : public ast {
-    std::vector<ast_ptr> terms;
-
-    ast_list(std::vector<ast_ptr> t)
-        : terms(std::move(t)) {}
-
-    void display(int tabs) const;
-};
-
-struct ast_index : public ast {
-    ast_ptr index;
-
-    ast_index(ast_ptr i)
-        : index(std::move(i)) {}
-    
-    void display(int tabs) const;
-};
-
-struct action_exec : public action {
-    ast_ptr body;
-
-    action_exec(ast_ptr i)
-        : body(std::move(i)) {}
-    
-    void display(int tabs) const;
-};
-
-struct action_return : public action {
-    ast_ptr body;
-
-    action_return(ast_ptr i)
-        : body(std::move(i)) {}
-    
-    void display(int tabs) const;
-};
-
-struct action_bind : public action {
-    std::string name;
-    action_ptr act;
-
-    action_bind(std::string n, action_ptr i)
-        : name(std::move(n)), act(std::move(i)) {}
-    
-    void display(int tabs) const;
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
 };
 
 struct pattern_var : public pattern {
@@ -218,8 +202,10 @@ struct pattern_var : public pattern {
 
     pattern_var(std::string v)
         : var(std::move(v)) {}
-    
-    void display() const;
+
+    void print(std::ostream &to) const;
+    void insert_bindings(type_mgr& mgr, type_env_ptr& env) const;
+    void typecheck(type_ptr t, type_mgr& mgr, type_env_ptr& env) const;
 };
 
 struct pattern_constr : public pattern {
@@ -228,38 +214,8 @@ struct pattern_constr : public pattern {
 
     pattern_constr(std::string c, std::vector<std::string> p)
         : constr(std::move(c)), params(std::move(p)) {}
-    
-    void display() const;
-};
 
-struct definition_defn : public definition {
-    std::string name;
-    std::vector<std::string> params;
-    ast_ptr body;
-
-    definition_defn(std::string n, std::vector<std::string> p, ast_ptr b)
-        : name(std::move(n)), params(std::move(p)), body(std::move(b)) {}
-    
-    void display(int tabs) const;
-};
-
-struct definition_defn_action : public definition {
-    std::string name;
-    std::vector<std::string> params;
-    std::vector<action_ptr> body;
-
-    definition_defn_action(std::string n, std::vector<std::string> p, std::vector<action_ptr> b)
-        : name(std::move(n)), params(std::move(p)), body(std::move(b)) {}
-
-    void display(int tabs) const;
-};
-
-struct definition_data : public definition {
-    std::string name;
-    std::vector<constructor_ptr> constructors;
-
-    definition_data(std::string n, std::vector<constructor_ptr> cs)
-        : name(std::move(n)), constructors(std::move(cs)) {}
-    
-    void display(int tabs) const;
+    void print(std::ostream &to) const;
+    virtual void insert_bindings(type_mgr& mgr, type_env_ptr& env) const;
+    virtual void typecheck(type_ptr t, type_mgr& mgr, type_env_ptr& env) const;
 };

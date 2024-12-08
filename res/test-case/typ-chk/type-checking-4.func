@@ -1,0 +1,12 @@
+defn if a b c = {
+    case a of {
+        True -> {b}
+        False -> {c}
+    }
+}
+
+defn popcount a = {
+    if (a == 0) 0 ((a & 1) + popcount (a >> 1))
+}
+
+defn funA = {3 == popcount 7}

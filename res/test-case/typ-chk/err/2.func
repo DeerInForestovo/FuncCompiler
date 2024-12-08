@@ -1,0 +1,3 @@
+defn foo a b = {a[b]}
+
+defn bar = {foo 1 2}
