@@ -52,10 +52,7 @@ type_ptr ast_float::typecheck(type_mgr& mgr) {
 void ast_list::print(int indent, std::ostream& to) const {
     print_indent(indent, to);
     to << "LIST:" << std::endl;
-    for (auto &a : arr) {
-        a->print(indent + 1, to);
-        to << std::endl;
-    }
+    for (auto &a : arr) a->print(indent + 1, to);
 }
 
 void ast_list::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into) {
