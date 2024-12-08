@@ -191,10 +191,13 @@ void typecheck_program(
         dependency_graph.add_function(def_defn.second->name);
 
         for(auto& dependency : def_defn.second->free_variables) {
-            if(defs_defn.find(dependency) == defs_defn.end() && 
-               prelude_func.find(dependency) == prelude_func.end()) {
-                std::cout << "defs_defn cannot find dependency: " << dependency << std::endl;
-                throw 0;
+            if(defs_defn.find(dependency) == defs_defn.end()) {
+                if (prelude_func.find(dependency) == prelude_func.end()) {
+                    std::cout << "defs_defn cannot find dependency: " << dependency << std::endl;
+                    throw 0;
+                } else {
+                    continue;
+                }
             }
             dependency_graph.add_edge(def_defn.second->name, dependency);
             // std::cout << "add_edge " << def_defn.second->name << " " << dependency << std::endl;
