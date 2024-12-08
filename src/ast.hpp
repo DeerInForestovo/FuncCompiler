@@ -74,11 +74,39 @@ struct ast_bool : public ast {
     type_ptr typecheck(type_mgr& mgr);
 };
 
-struct ast_string : public ast {
-    std::string str;
+struct ast_char : public ast {
+    char value;
 
-    explicit ast_string(std::string s)
-        : str(std::move(s)) {}
+    explicit ast_char(char v)
+        : value(v) {}
+
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
+};
+
+struct ast_list : public ast {
+    std::vector<ast_ptr> arr;
+
+    explicit ast_list(std::vector<ast_ptr> a)
+        : arr(std::move(a)) {}
+
+    explicit ast_list(std::string s) {
+        arr = std::vector<ast_ptr>();
+        for (char c : s) arr.push_back(ast_ptr(new ast_char(c)));
+    }
+
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
+};
+
+struct ast_index : public ast {
+    ast_ptr arr;
+    ast_ptr ind;
+
+    ast_index(ast_ptr a, ast_ptr i)
+        : arr(std::move(a)), ind(std::move(i)) {}
 
     void print(int indent, std::ostream& to) const;
     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
@@ -108,12 +136,24 @@ struct ast_uid : public ast {
 };
 
 struct ast_binop : public ast {
-    binop op;  
+    binop op;
     ast_ptr left;
     ast_ptr right;
 
     ast_binop(binop o, ast_ptr l, ast_ptr r)
         : op(o), left(std::move(l)), right(std::move(r)) {}
+
+    void print(int indent, std::ostream& to) const;
+    void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    type_ptr typecheck(type_mgr& mgr);
+};
+
+struct ast_uniop : public ast {
+    uniop op;
+    ast_ptr opd;
+
+    ast_uniop(uniop o, ast_ptr od)
+        : op(o), opd(std::move(od)) {}
 
     void print(int indent, std::ostream& to) const;
     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);

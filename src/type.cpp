@@ -178,7 +178,7 @@ type_ptr type_mgr::substitute(const std::map<std::string, type_ptr>& subst, cons
 }
 
 bool type_mgr::bind(type_var* s, type_ptr t) {
-    std::cout << "bind s=" << s->name << std::endl;
+    // std::cout << "bind s=" << s->name << std::endl;
     type_var* tvar = dynamic_cast<type_var*>(t.get());
     if (tvar && tvar->name == s->name) return true;  // No need to bind
     if (s->num_type) {

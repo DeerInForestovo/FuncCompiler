@@ -20,9 +20,38 @@ int lst_line_id = 1, cur_line_id = 1, line_id = 1;
 %}
 
 %%
-
+\"([^\\\"\n]|\\.)*\" {
+    UPDATE_LINE_ID return yy::parser::make_STRINGINSTANCE(std::string(yytext+1, yyleng-2));
+}
+\"([^\\\"\n]|\\.)*\\? {
+    UPDATE_LINE_ID REPORT_ERROR("Unmatched \".");
+    return yy::parser::make_STRINGINSTANCE("");
+}
+'([^\\'\n]|\\.)' {
+    UPDATE_LINE_ID;
+    char parsedChar = '\0';
+    if (yytext[1] == '\\') {
+        switch (yytext[2]) {
+            case '0':  parsedChar = '\0'; break;
+            case 'n':  parsedChar = '\n'; break;
+            case 't':  parsedChar = '\t'; break;
+            case 'r':  parsedChar = '\r'; break;
+            case '\\': parsedChar = '\\'; break;
+            case '\'': parsedChar = '\''; break;
+            case '\"': parsedChar = '\"'; break;
+            default: REPORT_ERROR("Unknown escape sequence."); break;
+        }
+    } else parsedChar = yytext[1];
+    return yy::parser::make_CHARINSTANCE(parsedChar);
+}
+'\\? {
+    UPDATE_LINE_ID REPORT_ERROR("Unmatched '.");
+    return yy::parser::make_CHARINSTANCE('\0');
+}
+#.* {}
 [ \t\r]+ {}
 \n { ++line_id; }
+\+\+ { UPDATE_LINE_ID return yy::parser::make_CONNECT(); }
 \+ { UPDATE_LINE_ID return yy::parser::make_PLUS(); }
 \* { UPDATE_LINE_ID return yy::parser::make_TIMES(); }
 - { UPDATE_LINE_ID return yy::parser::make_MINUS(); }
@@ -48,26 +77,12 @@ int lst_line_id = 1, cur_line_id = 1, line_id = 1;
 }
 [0-9]+[eE][-+]?[0-9]+ { UPDATE_LINE_ID return yy::parser::make_FLOATNUMBER(atof(yytext)); }
 [0-9]+ { UPDATE_LINE_ID return yy::parser::make_INTEGER(atoi(yytext)); }
-\"([^\\\"\n]|\\.)*\" {
-    UPDATE_LINE_ID return yy::parser::make_STRINGINSTANCE(std::string(yytext+1, yyleng-2));
-}
-\"([^\\\"\n]|\\.)*\\? {
-    UPDATE_LINE_ID REPORT_ERROR("Unmatched '\"'.");
-    return yy::parser::make_STRINGINSTANCE("");
-}
-
 defn { UPDATE_LINE_ID return yy::parser::make_DEFN(); }
 data { UPDATE_LINE_ID return yy::parser::make_DATA(); }
 case { UPDATE_LINE_ID return yy::parser::make_CASE(); }
 of { UPDATE_LINE_ID return yy::parser::make_OF(); }
 do { UPDATE_LINE_ID return yy::parser::make_DO(); }
 return { UPDATE_LINE_ID return yy::parser::make_RETURN(); }
-True { UPDATE_LINE_ID return yy::parser::make_TRUE(); }
-False { UPDATE_LINE_ID return yy::parser::make_FALSE(); }
-Int { UPDATE_LINE_ID return yy::parser::make_INT(); }
-String { UPDATE_LINE_ID return yy::parser::make_STRING(); }
-Float { UPDATE_LINE_ID return yy::parser::make_FLOAT(); }
-Bool { UPDATE_LINE_ID return yy::parser::make_BOOL(); }
 \{ { UPDATE_LINE_ID return yy::parser::make_OCURLY(); }
 \} { UPDATE_LINE_ID return yy::parser::make_CCURLY(); }
 \( { UPDATE_LINE_ID return yy::parser::make_OPAREN(); }

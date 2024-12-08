@@ -1,6 +1,7 @@
 #include "ast.hpp"
 #include <iostream>
 #include "binop.hpp"
+#include "uniop.hpp"
 #include "error.hpp"
 #include "type_env.hpp"
 
@@ -18,8 +19,8 @@ void ast_int::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>&
 }
 
 type_ptr ast_int::typecheck(type_mgr& mgr) {
-    return type_ptr(new type_app(mgr.new_num_type()));
-    // return type_ptr(new type_app(env->lookup_type("Int")));
+    // return type_ptr(new type_app(env->lookup_type("Int")));  // Do NOT use this
+    return type_ptr(new type_app(mgr.new_num_type()));  // An Int instance is num-taged-var type
 }
 
 void ast_float::print(int indent, std::ostream& to) const {
@@ -33,6 +34,85 @@ void ast_float::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string
 
 type_ptr ast_float::typecheck(type_mgr& mgr) {
     return type_ptr(new type_app(env->lookup_type("Float")));
+}
+
+void ast_bool::print(int indent, std::ostream& to) const {
+    print_indent(indent, to);
+    to << "BOOL: " << value << std::endl;
+}
+
+void ast_bool::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into) {
+    this->env = env;
+}
+
+type_ptr ast_bool::typecheck(type_mgr& mgr) {
+    return type_ptr(new type_app(env->lookup_type("Bool")));
+}
+
+void ast_list::print(int indent, std::ostream& to) const {
+    print_indent(indent, to);
+    to << "LIST:" << std::endl;
+    for (auto &a : arr) {
+        a->print(indent + 1, to);
+        to << std::endl;
+    }
+}
+
+void ast_list::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into) {
+    this->env = env;
+    for (auto &a : arr) a->find_free(mgr, env, into);
+}
+
+type_ptr ast_list::typecheck(type_mgr& mgr) {
+    type_ptr base_type = mgr.new_type();
+    for (auto &a : arr)
+        mgr.unify(a->typecheck(mgr), base_type);
+    type_ptr list_type = type_ptr(new type_arr(env->lookup_type("List"), base_type));
+    return list_type;
+}
+
+void ast_char::print(int indent, std::ostream& to) const {
+    print_indent(indent, to);
+    char unParsedChar = '\0';
+    switch (value) {
+        case '\0':  unParsedChar = '0'; break;
+        case '\n':  unParsedChar = 'n'; break;
+        case '\t':  unParsedChar = 't'; break;
+        case '\r':  unParsedChar = 'r'; break;
+    }
+    if (unParsedChar) to << "CHAR: \\" << unParsedChar << std::endl;
+        else to << "CHAR: " << value << std::endl;
+}
+
+void ast_char::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into) {
+    this->env = env;
+}
+
+type_ptr ast_char::typecheck(type_mgr& mgr) {
+    return type_ptr(new type_app(env->lookup_type("Char")));
+}
+
+void ast_index::print(int indent, std::ostream& to) const {
+    print_indent(indent, to);
+    to << "Index: " << std::endl;
+    arr->print(indent + 1, to);
+    ind->print(indent + 1, to);
+}
+
+void ast_index::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into) {
+    this->env = env;
+    arr->find_free(mgr, env, into);
+    ind->find_free(mgr, env, into);
+}
+
+type_ptr ast_index::typecheck(type_mgr& mgr) {
+    type_ptr arr_type = arr->typecheck(mgr);
+    type_ptr ind_type = ind->typecheck(mgr);
+    type_ptr base_type = mgr.new_type();
+    type_ptr list_type = type_ptr(new type_arr(env->lookup_type("List"), base_type));
+    mgr.unify(arr_type, list_type);
+    mgr.unify(ind_type, type_ptr(new type_app(env->lookup_type("Int"))));
+    return base_type;
 }
 
 void ast_lid::print(int indent, std::ostream& to) const {
@@ -59,12 +139,13 @@ void ast_uid::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>&
 }
 
 type_ptr ast_uid::typecheck(type_mgr& mgr) {
+    std::cout << "uid typecheck id = " << id << std::endl;
     return env->lookup(id)->instantiate(mgr);
 }
 
 void ast_binop::print(int indent, std::ostream& to) const {
     print_indent(indent, to);
-    to << "BINOP: " << op_name(op) << std::endl;
+    to << "BINOP: " << binop_name(op) << std::endl;
     left->print(indent + 1, to);
     right->print(indent + 1, to);
 }
@@ -78,17 +159,35 @@ void ast_binop::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string
 type_ptr ast_binop::typecheck(type_mgr& mgr) {
     type_ptr ltype = left->typecheck(mgr);
     type_ptr rtype = right->typecheck(mgr);
-    type_ptr ftype = env->lookup(op_name(op))->instantiate(mgr);
-    if(!ftype) throw type_error(std::string("unknown binary operator ") + op_name(op));
+    type_ptr ftype = env->lookup(binop_name(op))->instantiate(mgr);
+    if(!ftype) throw type_error(std::string("unknown binary operator ") + binop_name(op));
 
     type_ptr return_type = mgr.new_type();
     type_ptr arrow_one = type_ptr(new type_arr(rtype, return_type));
     type_ptr arrow_two = type_ptr(new type_arr(ltype, arrow_one));
 
-    std::cout << "unify binop" << std::endl;
-    arrow_two->print(mgr, std::cout); std::cout << std::endl;
-    ftype->print(mgr, std::cout); std::cout << std::endl;
     mgr.unify(arrow_two, ftype);
+    return return_type;
+}
+
+void ast_uniop::print(int indent, std::ostream& to) const {
+    print_indent(indent, to);
+    to << "UNIOP: " << uniop_name(op) << std::endl;
+    opd->print(indent + 1, to);
+}
+
+void ast_uniop::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into) {
+    this->env = env;
+    opd->find_free(mgr, env, into);
+}
+
+type_ptr ast_uniop::typecheck(type_mgr& mgr) {
+    type_ptr otype = opd->typecheck(mgr);
+    type_ptr ftype = env->lookup(uniop_name(op))->instantiate(mgr);
+    if(!ftype) throw type_error(std::string("unknown binary operator ") + uniop_name(op));
+    type_ptr return_type = mgr.new_type();
+    type_ptr arrow_type = type_ptr(new type_arr(otype, return_type));
+    mgr.unify(arrow_type, ftype);
     return return_type;
 }
 

@@ -25,6 +25,7 @@ add_executable(compiler
     type.cpp type.hpp
     error.cpp error.hpp
     binop.cpp binop.hpp
+    uniop.cpp uniop.hpp
     graph.cpp graph.hpp
     ${BISON_parser_OUTPUTS}
     ${FLEX_scanner_OUTPUTS}

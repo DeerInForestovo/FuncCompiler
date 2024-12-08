@@ -7,5 +7,4 @@ enum binop {
     LT, GT, LEQ, GEQ, EQ, NEQ,
 };
 
-std::string op_name(binop op);
-std::string op_action(binop op);
+std::string binop_name(binop op);
