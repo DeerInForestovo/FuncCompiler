@@ -93,8 +93,9 @@ return { UPDATE_LINE_ID return yy::parser::make_RETURN(); }
 -> { UPDATE_LINE_ID return yy::parser::make_ARROW(); }
 \<- { UPDATE_LINE_ID return yy::parser::make_BIND(); }
 = { UPDATE_LINE_ID return yy::parser::make_EQUAL(); }
-[a-z][a-zA-Z_]* { UPDATE_LINE_ID return yy::parser::make_LID(std::string(yytext)); }
-[A-Z][a-zA-Z_]* { UPDATE_LINE_ID return yy::parser::make_UID(std::string(yytext)); }
+_ { UPDATE_LINE_ID return yy::parser::make_INDEX(); }
+[a-z][a-zA-Z]* { UPDATE_LINE_ID return yy::parser::make_LID(std::string(yytext)); }
+[A-Z][a-zA-Z]* { UPDATE_LINE_ID return yy::parser::make_UID(std::string(yytext)); }
 
 . { UPDATE_LINE_ID REPORT_ERROR("Unexpected character '%s'", yytext); }
 

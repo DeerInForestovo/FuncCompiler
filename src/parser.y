@@ -67,7 +67,7 @@ extern yy::parser::symbol_type yylex();
 // %type <std::vector<action_ptr>> actions
 %type <std::vector<parsed_type_ptr>> typeList
 %type <parsed_type_ptr> type nonArrowType typeListElement
-%type <ast_ptr> aAdd aMul case app appBase appUniop aOr aAnd aBitor aXor aBitand aCmpeq aCmp aMove list
+%type <ast_ptr> aAdd aMul case app appBase appIndex appConn appUniop aOr aAnd aBitor aXor aBitand aCmpeq aCmp aMove list
 %type <definition_data_ptr> data 
 %type <definition_defn_ptr> defn
 %type <branch_ptr> branch
@@ -190,15 +190,22 @@ app
     | appUniop { $$ = std::move($1); }
     ;
 
-appUniop
-    : MINUS appBase %prec NEGATE { $$ = ast_ptr(new ast_uniop(NEGATE, std::move($2))); }
-    | NOT appBase { $$ = ast_ptr(new ast_uniop(NOT, std::move($2))); }
-    | BITNOT appBase { $$ = ast_ptr(new ast_uniop(BITNOT, std::move($2))); }
+appUniop  // Apply union-operators
+    : MINUS appConn %prec NEGATE { $$ = ast_ptr(new ast_uniop(NEGATE, std::move($2))); }
+    | NOT appConn { $$ = ast_ptr(new ast_uniop(NOT, std::move($2))); }
+    | BITNOT appConn { $$ = ast_ptr(new ast_uniop(BITNOT, std::move($2))); }
+    | appConn { $$ = std::move($1); }
+
+appConn  // Connect two lists
+    : appConn CONNECT appIndex { $$ = ast_ptr(new ast_connect(std::move($1), std::move($3))); }
+    | appIndex { $$ = std::move($1); }
+
+appIndex  // Index from a list
+    : appIndex INDEX appBase { $$ = ast_ptr(new ast_index(std::move($1), std::move($3))); }
     | appBase { $$ = std::move($1); }
 
 appBase
-    : appBase OSQUARE %prec INDEX aOr CSQUARE { $$ = ast_ptr(new ast_index(std::move($1), std::move($3))); }  // TODO
-    | FLOATNUMBER { $$ = ast_ptr(new ast_float($1)); }
+    : FLOATNUMBER { $$ = ast_ptr(new ast_float($1)); }
     | INTEGER { $$ = ast_ptr(new ast_int($1)); }
     | STRINGINSTANCE { $$ = ast_ptr(new ast_list(std::move($1))); }  // string = list* char
     | CHARINSTANCE { $$ = ast_ptr(new ast_char($1)); }

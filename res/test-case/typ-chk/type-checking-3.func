@@ -1,0 +1,5 @@
+defn not a = {!a}
+
+defn apply a b = {a b}
+
+defn funA = {True == apply not (apply not True)}

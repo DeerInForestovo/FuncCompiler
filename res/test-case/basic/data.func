@@ -10,7 +10,7 @@ defn sum a = {
     }
 }
 
-defn get a b = {a[b]}
+defn get a b = {a_b}
 
 defn make_tuple a b = {(a, b, )}
 

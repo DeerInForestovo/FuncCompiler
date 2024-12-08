@@ -1,0 +1,3 @@
+defn foo a = {a + 1}
+
+defn bar = {foo foo 1}

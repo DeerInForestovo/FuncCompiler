@@ -1,0 +1,20 @@
+defn if a b c = {
+    case a of {
+        True -> {b}
+        False -> {c}
+    }
+}
+
+defn handleOdd a = {
+    collatzConjecture(3 * a + 1)
+}
+
+defn handleEven a = {
+    collatzConjecture(a / 2)
+}
+
+defn collatzConjecture a = {
+    if (a == 1) [1,] ([a,] ++ ((if ((a & 1) == 0) handleOdd handleEven) a))
+}
+
+defn foo = {collatzConjecture 323}  # https://en.wikipedia.org/wiki/Collatz_conjecture

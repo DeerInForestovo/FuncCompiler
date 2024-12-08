@@ -1,0 +1,7 @@
+defn foo = do {
+    defn a <- {readInt}
+    defn b <- return {readInt}
+    defn c <- return {a + b}
+    {print c}
+    return {c}
+}
