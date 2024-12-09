@@ -234,6 +234,91 @@ type_ptr ast_app::typecheck(type_mgr& mgr) {
     return return_type;
 }
 
+void ast_do::print(int indent, std::ostream &to) const {
+    print_indent(indent, to);
+    to << "DO: " << std::endl;
+    for (auto& action: actions) {
+        action->print(indent + 1, to);
+    }
+}
+
+void ast_do::find_free(type_mgr &mgr, type_env_ptr &env, std::set<std::string> &into) {
+    this->env = env;
+
+    type_env_ptr curr_env = env;
+    for (auto& action: actions) {
+        type_env_ptr new_env = type_scope(curr_env);
+        action->expr->find_free(mgr, new_env, into);
+        action->insert_binding(mgr, new_env);
+        curr_env = new_env;
+    }
+}
+
+type_ptr ast_do::typecheck(type_mgr &mgr) {
+    type_ptr return_type = mgr.new_type();
+    mgr.unify(return_type, env->lookup("IOSimpleCons")->instantiate(mgr));
+    
+    type_ptr last_type;
+    for (auto& action: actions) {
+        last_type = action->typecheck(mgr);
+    }
+
+    mgr.unify(return_type, last_type);
+    return return_type;
+}
+
+void action::insert_binding(type_mgr &mgr, type_env_ptr &env) {
+    this->env = env;
+    if (!bind_name.empty()) {
+        env->bind(bind_name, mgr.new_type());
+    }
+}
+
+void action_exec::print(int indent, std::ostream &to) const {
+    print_indent(indent, to);
+    if (bind_name.empty()) {
+        to << "EXEC: " << std::endl;
+    } else {
+        to << "BIND " << bind_name << " TO EXEC: " << std::endl;
+    }
+    expr->print(indent + 1, to);
+}
+
+type_ptr action_exec::typecheck(type_mgr &mgr) {
+    type_ptr body_type = expr->typecheck(mgr);
+    mgr.unify(body_type, expr->env->lookup("IOSimpleCons")->instantiate(mgr));
+
+    if (!bind_name.empty()) {
+        type_ptr io_bind_ptr = env->lookup("IOBindCons")->instantiate(mgr);
+        type_arr* io_bind = dynamic_cast<type_arr*>(io_bind_ptr.get());
+        mgr.unify(env->lookup(bind_name)->instantiate(mgr), io_bind->left);
+    }
+
+    return body_type;
+}
+
+void action_return::print(int indent, std::ostream &to) const {
+    print_indent(indent, to);
+    if (bind_name.empty()) {
+        to << "RETURN: " << std::endl;
+    } else {
+        to << "BIND " << bind_name << " TO RETURN: " << std::endl;
+    }
+    expr->print(indent + 1, to);
+}
+
+type_ptr action_return::typecheck(type_mgr &mgr) {
+    type_ptr body_type = expr->typecheck(mgr);
+    type_ptr return_type = mgr.new_type();
+    mgr.unify(type_ptr(new type_arr(body_type, return_type)), env->lookup("IOBindCons")->instantiate(mgr));
+
+    if (!bind_name.empty()) {
+        mgr.unify(env->lookup(bind_name)->instantiate(mgr), body_type);
+    }
+
+    return return_type;
+}
+
 void ast_case::print(int indent, std::ostream& to) const {
     print_indent(indent, to);
     to << "CASE: " << std::endl;

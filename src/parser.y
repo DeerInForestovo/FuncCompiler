@@ -63,8 +63,8 @@ extern yy::parser::symbol_type yylex();
 %type <std::vector<std::string>> lowercaseParams
 %type <std::vector<branch_ptr>> branches
 %type <std::vector<constructor_ptr>> constructors
-// %type <action_ptr> action actionBase
-// %type <std::vector<action_ptr>> actions
+%type <action_ptr> action bind
+%type <std::vector<action_ptr>> actions actionOrBinds
 %type <std::vector<parsed_type_ptr>> typeList
 %type <parsed_type_ptr> type nonArrowType typeListElement
 %type <ast_ptr> aAdd aMul case app appBase appIndex appConn appUniop aOr aAnd aBitor aXor aBitand aCmpeq aCmp aMove list
@@ -97,30 +97,33 @@ defn
     : DEFN LID lowercaseParams EQUAL OCURLY aOr CCURLY
         { $$ = definition_defn_ptr(
             new definition_defn(std::move($2), std::move($3), std::move($6))); }
-    // | DEFN LID lowercaseParams EQUAL DO OCURLY actions CCURLY 
-    //     { $$ = definition_ptr(
-    //         new definition_defn_action(std::move($2), std::move($3), std::move($7))); }
+    | DEFN LID lowercaseParams EQUAL DO OCURLY actions CCURLY 
+        { $$ = definition_defn_ptr(
+            new definition_defn(std::move($2), std::move($3), ast_ptr(new ast_do(std::move($7))))); }
     | DEFN LID lowercaseParams EQUAL OCURLY aOr error { REPORT_ERROR("Unmatched '{'."); }
-    // | DEFN LID lowercaseParams EQUAL DO OCURLY actions error { REPORT_ERROR("Unmatched '{'."); }
+    | DEFN LID lowercaseParams EQUAL DO OCURLY actions error { REPORT_ERROR("Unmatched '{'."); }
     | DEFN LID lowercaseParams EQUAL OCURLY error CCURLY { REPORT_ERROR("Illegal expr."); }
     ;
 
-// actions
-//     : actions action { $$ = std::move($1); $$.push_back(std::move($2)); }
-//     | action { $$ = std::vector<action_ptr>(); $$.push_back(std::move($1)); }
-//     ;
+actions
+    : actionOrBinds action { $$ = std::move($1); $$.push_back(std::move($2)); }
+    ;
 
-// action
-//     : actionBase { $$ = std::move($1); }
-//     | DEFN LID BIND actionBase { $$ = action_ptr(new action_bind(std::move($2), std::move($4))); }
-//     ;
+actionOrBinds
+    : %empty { $$ = std::vector<action_ptr>(); }
+    | actionOrBinds action { $$ = std::move($1); $$.push_back(std::move($2)); }
+    | actionOrBinds bind { $$ = std::move($1); $$.push_back(std::move($2)); }
+    ;
 
-// actionBase
-//     : OCURLY aOr CCURLY { $$ = action_ptr(new action_exec(std::move($2))); }
-//     | RETURN OCURLY aOr CCURLY { $$ = action_ptr(new action_return(std::move($3))); }
-//     | OCURLY error CCURLY { REPORT_ERROR("Illegal expr."); }
-//     | RETURN OCURLY error CCURLY { REPORT_ERROR("Illegal expr."); }
-//     ;
+bind
+    : DEFN LID BIND action { $$ = std::move($4); $$->bind_name = std::move($2); }
+
+action
+    : OCURLY aOr CCURLY { $$ = action_ptr(new action_exec(std::move($2))); }
+    | RETURN OCURLY aOr CCURLY { $$ = action_ptr(new action_return(std::move($3))); }
+    | OCURLY error CCURLY { REPORT_ERROR("Illegal expr."); }
+    | RETURN OCURLY error CCURLY { REPORT_ERROR("Illegal expr."); }
+    ;
 
 lowercaseParams
     : %empty { $$ = std::vector<std::string>(); }

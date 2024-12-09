@@ -56,6 +56,33 @@ void typecheck_program(
     bool_type->insert_constructors();
     type_ptr bool_type_app = type_ptr(new type_app(
             type_ptr(new type_data("Bool"))));
+
+    // add empty
+
+    definition_data_ptr empty_type = definition_data_ptr(
+            new definition_data("Empty", std::vector<std::string>(), std::vector<constructor_ptr>()));
+    empty_type->insert_types(env);
+    type_ptr empty_type_app = type_ptr(new type_app(type_ptr(new type_data("Empty"))));
+
+    // add IO
+    definition_data_ptr io_type = definition_data_ptr(
+            new definition_data("IO", std::vector<std::string>{"IOArg"}, std::vector<constructor_ptr>()));
+    io_type->insert_types(env);
+
+    type_ptr arg_type = type_ptr(new type_var("IOArg"));
+    type_app *io_app = new type_app(type_ptr(new type_data("IO")));
+    type_ptr io_type_app = type_ptr(io_app);
+    io_app->arguments.push_back(arg_type);
+
+    type_scheme_ptr io_scheme_ptr(new type_scheme(io_type_app));
+    io_scheme_ptr->forall.push_back("IOArg");
+    env->bind("IOSimpleCons", io_scheme_ptr);
+
+    type_ptr io_bind_app(new type_arr(arg_type, io_type_app));
+    type_scheme_ptr io_bind_scheme_ptr(new type_scheme(io_bind_app));
+    io_bind_scheme_ptr->forall.push_back("IOArg");
+    env->bind("IOBindCons", io_bind_scheme_ptr);
+
     // insert all data definitions
     for(auto& def_data : defs_data) {
         def_data.second->insert_types(env);
@@ -132,6 +159,31 @@ void typecheck_program(
 
     // std::cout << "Bind base types and op types, finished." << std::endl;
 
+    // add readInt and print
+    std::set<std::string> prelude_func;
+
+    type_ptr read_int_type = mgr.new_type();
+    type_ptr io_bind_read_int_type = io_bind_scheme_ptr->instantiate(mgr);
+    type_arr* io_bind_read_int = dynamic_cast<type_arr*>(io_bind_read_int_type.get());
+    mgr.unify(num_type_app, io_bind_read_int->left);
+    mgr.unify(read_int_type, io_bind_read_int->right);
+    env->bind("readInt", read_int_type);
+    prelude_func.insert("readInt");
+
+    type_ptr io_empty_type = mgr.new_type();
+    type_ptr io_bind_empty_type = io_bind_scheme_ptr->instantiate(mgr);
+    type_arr* io_bind_empty = dynamic_cast<type_arr*>(io_bind_empty_type.get());
+    mgr.unify(empty_type_app, io_bind_empty->left);
+    mgr.unify(io_empty_type, io_bind_empty->right);
+    type_ptr print_var_type = type_ptr(new type_var("PrintVar"));
+    type_ptr print_type(new type_arr(print_var_type, io_empty_type));
+    type_scheme_ptr print_scheme_ptr(new type_scheme(print_type));
+    print_scheme_ptr->forall.push_back("PrintVar");
+    env->bind("print", print_scheme_ptr);
+    prelude_func.insert("print");
+
+    // std::cout << "Insert prelude functions, finished." << std::endl;
+
     function_graph dependency_graph;
 
     for(auto& def_defn : defs_defn) {
@@ -140,8 +192,12 @@ void typecheck_program(
 
         for(auto& dependency : def_defn.second->free_variables) {
             if(defs_defn.find(dependency) == defs_defn.end()) {
-                std::cout << "defs_defn cannot find dependency: " << dependency << std::endl;
-                throw 0;
+                if (prelude_func.find(dependency) == prelude_func.end()) {
+                    std::cout << "defs_defn cannot find dependency: " << dependency << std::endl;
+                    throw 0;
+                } else {
+                    continue;
+                }
             }
             dependency_graph.add_edge(def_defn.second->name, dependency);
             // std::cout << "add_edge " << def_defn.second->name << " " << dependency << std::endl;
