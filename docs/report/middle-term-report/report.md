@@ -2,23 +2,20 @@
 
 **Group:** Zhezhen Cao Fan Club
 
-**Leader:** 匡亮 12111012
+**Leader:** Kuang Liang 12111012
 
 ## Language Design
 
 - *Defining functions*
-    Define a function named with a LID (`[a-z][a-zA-Z]`) with an expression.
-
+    - Define a function named with a LID (`[a-z][a-zA-Z]`) with an expression.
     ```
     defn f x = {x + 1}
     ```
 - *Declaring data types*
-    Define a data type named with a UID (`[A-Z][a-zA-Z]`) with multiple constructors.
-
-    New feature: Define a data type with a placeholder.
-
+    - Define a data type named with a UID (`[A-Z][a-zA-Z]`) with multiple constructors.
+    - New feature: Define a data type with a placeholder.
     ```
-    data Shape = {Circle r, Rectangle w h}
+    data Shape = {Circle Int, Rectangle Int Int}
     data Pair a = {MkPair a a}  # new
     ```
 - *Applying fuctions*
@@ -33,18 +30,16 @@
     - All C-featured operations (five-rule operation, boolean operations, bitwise operations, comparing operations and indexing)
     - Connect two lists with `++`
 - *Pattern matching* (case of)
-    The placeholders in a pattern do not need to be the same with those in the constructor.
-    
     ```
     defn area shape = {
         case shape of {
-            Circle r -> {r * r * 3.14}
-            Rectangle a b -> {a * b}
+            Circle r -> {r * r * 3}
+            Rectangle w h -> {w * h}
         }
     }
     ```
 - *Do block*
-    To specify a process.
+    - To specify a process.
     ```
     defn aPlusB = do {
         defn a <- {readInt}
@@ -57,12 +52,15 @@
 
 ## Language Feature
 
-- Advantages: Concise & elegant for logic-based process.
-- Disadvantages: Able but not suitable for building/manipulating data structures.
+Advantages: Concise, elegant and safe for logic-based process.
+
+Disadvantages: Able but not suitable for building/manipulating data structures.
 
 ## Progress & Plan
 
-We have finished lexical checking, parsing and type checking. Later, we plan to compile and run with LLVM.
+Tools: Flex, Bison, LLVM (in progress).
+
+We have finished lexical checking, parsing and type checking. Later, we plan to compile the code and run it on LLVM.
 
 ## Testcases
 
@@ -82,12 +80,19 @@ All testcases `.func` files are under `\res\test-case`. Here is the explanation:
         - `7.func`: case-types are not the same.
         - `8.func` and `9.func`: mixing IO type and non-IO type. (Hint: the correct one is `type-checking-5.func`)
         - `10.func`: unknown LID.
-    - `type-checking-[1-8].func`: correct cases (the 1st and 8th ones are recommended to understand the advantage of our language).
+        - `5.func`: our compiler ends with a Segmentation fault in this testcase.
+    - `type-checking-[1-8].func`: correct cases (the 1st and 8th are recommended for understanding the advantage of our language).
 
-## How to run our code
+Score: 20/21
 
-1. Skip this if you do not want. I have included `func-highlighter-0.0.1.vsix` in our folder. This is a VsCode extension which can highlight a `.func` file. It can help if you want to self-define some testcase to test our code. Codes are on [GitHub](https://github.com/DeerInForestovo/func-highlighter).
+## How to Run
 
-2. Skip this if you do not want. Run `build.sh` to generate our compiler. The version I uploaded on BlackBoard is compiled.
+1. Skip this if you do not want. I have included `func-highlighter-0.0.1.vsix` in our folder. This is our VsCode extension which can highlight a `.func` file. It can help if you want to self-define some testcase to test our code. Codes are on [GitHub](https://github.com/DeerInForestovo/func-highlighter).
 
-3. Run `test.sh` to test all testcases in the folder `\res\test-case`. You can add more examples to `\res\test-case\z` (so that they will appear in the bottom).
+2. Skip this if you do not want. Run `.\build.sh` to generate our compiler. The version I uploaded on BlackBoard is compiled.
+
+3. Run `clear && .\test.sh` to test all testcases in the folder `\res\test-case`. You can add more examples to `\res\test-case\z` (so that they will appear in the bottom).
+
+## Contribution Ratio
+
+1:1:1:1
