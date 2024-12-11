@@ -52,9 +52,13 @@
 
 ## Language Feature
 
-Advantages: Concise, elegant and safe for logic-based process.
+- Language design:
+    - Advantages: Concise, elegant and safe for logic-based process.
+    - Disadvantages: Able but not suitable for building/manipulating data structures.
 
-Disadvantages: Able but not suitable for building/manipulating data structures.
+- Lazy evaluation:
+    - Advantages: Comptutation efficiency & improved abstraction
+    - Disadvantages: Memory overhead & unpredictability
 
 ## Progress & Plan
 
