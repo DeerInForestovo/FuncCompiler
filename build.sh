@@ -1,5 +1,3 @@
-#!/bin/bash
-
 cd src
 if [ -d "build" ]; then
     rm -r build
