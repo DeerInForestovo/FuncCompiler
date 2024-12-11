@@ -1,0 +1,27 @@
+data Pair a = {
+    Mkp a a
+}
+
+defn fst p = {
+    case p of {
+        Mkp a b -> {a}
+    }
+}
+
+defn snd p = {
+    case p of {
+        Mkp a b -> {b}
+    }
+}
+
+defn pair = { Mkp 1 2 }
+
+defn main = {
+    fst pair + snd pair
+}
+
+defn pairr = { Mkp True False }
+
+defn mainn = {
+    fst pairr || snd pairr
+}

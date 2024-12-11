@@ -61,7 +61,7 @@ void type_app::print(const type_mgr& mgr, std::ostream& to) const {
 
 std::string type_mgr::new_type_name() {
     int temp = last_id++;
-    std::string str = "";
+    std::string str = "_";
 
     while(temp != -1) {
         str += (char) ('a' + (temp % 26));

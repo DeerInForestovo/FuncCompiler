@@ -1,5 +1,6 @@
 #include "type_env.hpp"
 #include "type.hpp"
+#include "error.hpp"
 #include <iostream>
 
 type_scheme_ptr type_env::lookup(const std::string& name) const {
@@ -25,10 +26,8 @@ void type_env::bind(const std::string& name, type_scheme_ptr t) {
 }
 
 void type_env::bind_type(const std::string& type_name, type_ptr t) {
-    if(lookup_type(type_name) != nullptr) {
-        std::cout << "type_env::bind_type: duplicate definition of " << type_name << std::endl;
-        throw 0;
-    }
+    if(lookup_type(type_name) != nullptr)
+        throw type_error("Duplicate definition of " + type_name);
     type_names[type_name] = t;
 }
 

@@ -21,7 +21,6 @@ add_executable(compiler
     parsed_type.cpp parsed_type.hpp
     ast.cpp ast.hpp
     type_env.cpp type_env.hpp
-    env.cpp env.hpp
     type.cpp type.hpp
     error.cpp error.hpp
     binop.cpp binop.hpp

@@ -7,8 +7,13 @@
 #include "error.hpp"
 #include "type.hpp"
 
+extern int lexer_error_cnt;
+extern int parser_error_cnt;
+extern int yylineno;
+int uncovered_parser_error_cnt;
 void yy::parser::error(const std::string& msg) {
-    std::cout << "An error occured: " << msg << std::endl;
+    std::cerr << "Parser error at line " << yylineno << ": " << msg << std::endl;
+    ++uncovered_parser_error_cnt;
 }
 
 extern std::map<std::string, definition_data_ptr> defs_data;
@@ -41,10 +46,8 @@ void typecheck_program(
     env->bind_type("List", list_type);
 
     // data types
-    if (defs_data.find("Bool") != defs_data.end()) {
-        std::cout << "error: User self-defined Bool type." << std::endl;
-        throw 0;
-    }
+    if (defs_data.find("Bool") != defs_data.end())
+        throw type_error("User self-defined Bool type.");
     constructor_ptr true_constructor = constructor_ptr(new constructor("True", std::vector<parsed_type_ptr>()));
     constructor_ptr false_constructor = constructor_ptr(new constructor("False", std::vector<parsed_type_ptr>()));
     std::vector<constructor_ptr> bool_constructors;
@@ -190,8 +193,7 @@ void typecheck_program(
         for(auto& dependency : def_defn.second->free_variables) {
             if(defs_defn.find(dependency) == defs_defn.end()) {
                 if (prelude_func.find(dependency) == prelude_func.end()) {
-                    std::cout << "defs_defn cannot find dependency: " << dependency << std::endl;
-                    throw 0;
+                    throw type_error("defs_defn cannot find dependency: " + dependency);
                 } else {
                     continue;
                 }
@@ -242,6 +244,13 @@ int main() {
 
     std::cout << "Parsing begin:" << std::endl;
     parser.parse();
+    if (lexer_error_cnt || parser_error_cnt || uncovered_parser_error_cnt) {
+        std::cout << "Parsing failed. (" <<
+            lexer_error_cnt << " lexer error(s), " << 
+            parser_error_cnt << " covered parser error(s), " <<
+            uncovered_parser_error_cnt << " uncovered parser error(s).)" << std::endl;
+        return 0;
+    }
     std::cout << "Parsing finished." << std::endl;
 
     std::cout << "Type checking begin:" << std::endl;

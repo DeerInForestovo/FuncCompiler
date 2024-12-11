@@ -6,7 +6,6 @@
 #include "type_env.hpp"
 #include "binop.hpp"
 #include "uniop.hpp"
-#include "env.hpp"
 
 struct ast {
     type_env_ptr env;

@@ -44,7 +44,8 @@ void definition_data::insert_constructors() const {
     type_app* return_app = new type_app(std::move(this_type_ptr));
     type_ptr return_type(return_app);
     for(auto& var : vars) {
-        if(var_set.find(var) != var_set.end()) throw 0;
+        if(var_set.find(var) != var_set.end())
+            throw type_error("Duplicated placeholders in the data definition.");
         var_set.insert(var);
         return_app->arguments.push_back(type_ptr(new type_var(var)));
     }

@@ -1,6 +1,6 @@
 defn foo a = {
     case a of {
         True -> {1}
-        False -> {(1, )}
+        False -> {[1,]}
     }
 }
