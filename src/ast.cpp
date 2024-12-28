@@ -36,19 +36,6 @@ type_ptr ast_float::typecheck(type_mgr& mgr) {
     return type_ptr(new type_app(env->lookup_type("Float")));
 }
 
-// void ast_bool::print(int indent, std::ostream& to) const {
-//     print_indent(indent, to);
-//     to << "BOOL: " << value << std::endl;
-// }
-
-// void ast_bool::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into) {
-//     this->env = env;
-// }
-
-// type_ptr ast_bool::typecheck(type_mgr& mgr) {
-//     return type_ptr(new type_app(env->lookup_type("Bool")));
-// }
-
 void ast_list::print(int indent, std::ostream& to) const {
     print_indent(indent, to);
     to << "LIST:" << std::endl;
@@ -61,11 +48,14 @@ void ast_list::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>
 }
 
 type_ptr ast_list::typecheck(type_mgr& mgr) {
-    type_ptr base_type = mgr.new_type();
+    type_ptr arg_type = mgr.new_type();
     for (auto &a : arr)
-        mgr.unify(a->typecheck(mgr), base_type);
-    type_ptr list_type = type_ptr(new type_arr(env->lookup_type("List"), base_type));
-    return list_type;
+        mgr.unify(a->typecheck(mgr), arg_type);
+    type_ptr list_type = env->lookup_type("List");
+    type_app* list_app = new type_app(list_type);
+    list_app->arguments.emplace_back(arg_type);
+    type_ptr list_app_type = type_ptr(list_app);
+    return list_app_type;
 }
 
 void ast_char::print(int indent, std::ostream& to) const {
@@ -87,29 +77,6 @@ void ast_char::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>
 
 type_ptr ast_char::typecheck(type_mgr& mgr) {
     return type_ptr(new type_app(env->lookup_type("Char")));
-}
-
-void ast_index::print(int indent, std::ostream& to) const {
-    print_indent(indent, to);
-    to << "Index: " << std::endl;
-    arr->print(indent + 1, to);
-    ind->print(indent + 1, to);
-}
-
-void ast_index::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into) {
-    this->env = env;
-    arr->find_free(mgr, env, into);
-    ind->find_free(mgr, env, into);
-}
-
-type_ptr ast_index::typecheck(type_mgr& mgr) {
-    type_ptr arr_type = arr->typecheck(mgr);
-    type_ptr ind_type = ind->typecheck(mgr);
-    type_ptr base_type = mgr.new_type();
-    type_ptr list_type = type_ptr(new type_arr(env->lookup_type("List"), base_type));
-    mgr.unify(arr_type, list_type);
-    mgr.unify(ind_type, type_ptr(new type_app(env->lookup_type("Int"))));
-    return base_type;
 }
 
 void ast_lid::print(int indent, std::ostream& to) const {
@@ -165,29 +132,6 @@ type_ptr ast_binop::typecheck(type_mgr& mgr) {
 
     mgr.unify(arrow_two, ftype);
     return return_type;
-}
-
-void ast_connect::print(int indent, std::ostream& to) const {
-    print_indent(indent, to);
-    to << "CONNECT: " << std::endl;
-    left->print(indent + 1, to);
-    right->print(indent + 1, to);
-}
-
-void ast_connect::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into) {
-    this->env = env;
-    left->find_free(mgr, env, into);
-    right->find_free(mgr, env, into);
-}
-
-type_ptr ast_connect::typecheck(type_mgr& mgr) {
-    type_ptr ltype = left->typecheck(mgr);
-    type_ptr rtype = right->typecheck(mgr);
-    type_ptr base_type = mgr.new_type();
-    type_ptr list_type = type_ptr(new type_arr(env->lookup_type("List"), base_type));
-    mgr.unify(ltype, list_type);
-    mgr.unify(rtype, list_type);
-    return list_type;
 }
 
 void ast_uniop::print(int indent, std::ostream& to) const {

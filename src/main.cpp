@@ -42,9 +42,6 @@ void typecheck_program(
     type_ptr char_type = type_ptr(new type_base("Char"));
     env->bind_type("Char", char_type);
 
-    type_ptr list_type = type_ptr(new type_base("List"));
-    env->bind_type("List", list_type);
-
     // data types
     if (defs_data.find("Bool") != defs_data.end())
         throw type_error("User self-defined Bool type.");
@@ -60,8 +57,18 @@ void typecheck_program(
     type_ptr bool_type_app = type_ptr(new type_app(
             type_ptr(new type_data("Bool"))));
 
-    // add empty
+    if (defs_data.find("List") != defs_data.end())
+        throw type_error("User self-defined List type.");
+    definition_data_ptr list_type = definition_data_ptr(new 
+            definition_data("List", std::vector<std::string>{"ListArg"}, std::vector<constructor_ptr>()));
+    list_type->insert_types(env);
+    list_type->insert_constructors();
+    type_ptr list_arg_type = type_ptr(new type_var("ListArg"));
+    type_app *list_app = new type_app(type_ptr(env->lookup_type("List")));
+    list_app->arguments.emplace_back(list_arg_type);
+    type_ptr list_type_app = type_ptr(list_app);
 
+    // add empty
     definition_data_ptr empty_type = definition_data_ptr(
             new definition_data("Empty", std::vector<std::string>(), std::vector<constructor_ptr>()));
     empty_type->insert_types(env);
@@ -72,16 +79,16 @@ void typecheck_program(
             new definition_data("IO", std::vector<std::string>{"IOArg"}, std::vector<constructor_ptr>()));
     io_type->insert_types(env);
 
-    type_ptr arg_type = type_ptr(new type_var("IOArg"));
+    type_ptr io_arg_type = type_ptr(new type_var("IOArg"));
     type_app *io_app = new type_app(type_ptr(new type_data("IO")));
     type_ptr io_type_app = type_ptr(io_app);
-    io_app->arguments.push_back(arg_type);
+    io_app->arguments.push_back(io_arg_type);
 
     type_scheme_ptr io_scheme_ptr(new type_scheme(io_type_app));
     io_scheme_ptr->forall.emplace_back("IOArg", false);
     env->bind("IOSimpleCons", io_scheme_ptr);
 
-    type_ptr io_bind_app(new type_arr(arg_type, io_type_app));
+    type_ptr io_bind_app(new type_arr(io_arg_type, io_type_app));
     type_scheme_ptr io_bind_scheme_ptr(new type_scheme(io_bind_app));
     io_bind_scheme_ptr->forall.emplace_back("IOArg", false);
     env->bind("IOBindCons", io_bind_scheme_ptr);
@@ -147,7 +154,7 @@ void typecheck_program(
     type_ptr num_uniop_type = type_ptr(new type_arr(num_type_app, num_type_app));
     type_scheme_ptr num_uniop_type_ptr = type_scheme_ptr(new type_scheme(std::move(num_uniop_type)));
     num_uniop_type_ptr->forall.emplace_back("Num", true);
-    env->bind("--", num_uniop_type_ptr);
+    env->bind("--", num_uniop_type_ptr);  // This op is negate
 
     // std::cout << "Bind int_uniop types:" << std::endl;
     type_ptr int_uniop_type = type_ptr(new type_arr(int_type_app, int_type_app));
@@ -156,6 +163,22 @@ void typecheck_program(
     // std::cout << "Bind bool_uniop types:" << std::endl;
     type_ptr bool_uniop_type = type_ptr(new type_arr(bool_type_app, bool_type_app));
     env->bind("!", bool_uniop_type);
+
+    // std::cout << "Bind index:" << std::endl;
+    type_ptr index_type = type_ptr(new type_arr(list_type_app, type_ptr(
+            new type_arr(int_type_app, list_arg_type))));
+    type_scheme* index_type_scheme = new type_scheme(std::move(index_type));
+    index_type_scheme->forall.emplace_back("ListArg", false);
+    type_scheme_ptr index_type_ptr = type_scheme_ptr(index_type_scheme);
+    env->bind("_", index_type_ptr);
+
+    // std::cout << "Bind conn:" << std::endl;
+    type_ptr conn_type = type_ptr(new type_arr(list_type_app, type_ptr(
+            new type_arr(list_type_app, list_type_app))));
+    type_scheme* conn_type_scheme = new type_scheme(std::move(conn_type));
+    conn_type_scheme->forall.emplace_back("ListArg", false);
+    type_scheme_ptr conn_type_ptr = type_scheme_ptr(conn_type_scheme);
+    env->bind("++", conn_type_ptr);
 
     // std::cout << "Bind base types and op types, finished." << std::endl;
 

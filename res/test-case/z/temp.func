@@ -1,1 +1,24 @@
-defn a = { [1,2,3,]_1 }
+defn listListInt = {[[1,2,3,], [4,5,6,],]}
+defn listListChar = {["123", "456",]}
+defn makeList a b c = {[a, b, c,]}
+defn conn a b = {a ++ b}
+defn index a b = {a _ b}
+defn mainA = {conn (index listListInt 0) (index listListInt 1)}
+defn mainB = {conn (index listListChar 0) (index listListChar 1)}
+defn mainC = {index (index listListChar 0) 0 == '1'}
+defn mainD = {index (index listListInt 0) 0 == 1}
+defn mainE = {makeList 1 2 3}
+defn mainF = {makeList '1' '2' '3'}
+defn mainG = {makeList True False True}
+data Mytype a = {
+    Single a,
+    Double a a
+}
+defn mainH = {makeList (Single 1) (Single 2) (Single 3)}
+defn mainI = {makeList (Double 1 1) (Double 2 2) (Double 3 3)}
+defn mainJ t = {
+    case (index t 1) of {
+        Single a -> {a}
+        Double a a -> {a + a}
+    }
+}
