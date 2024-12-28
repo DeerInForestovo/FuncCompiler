@@ -79,17 +79,6 @@ struct ast_float : public ast {
     type_ptr typecheck(type_mgr& mgr);
 };
 
-// struct ast_bool : public ast {
-//     bool value;
-
-//     explicit ast_bool(bool v)
-//         : value(v) {}
-
-//     void print(int indent, std::ostream& to) const;
-//     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
-//     type_ptr typecheck(type_mgr& mgr);
-// };
-
 struct ast_char : public ast {
     char value;
 
@@ -116,30 +105,6 @@ struct ast_list : public ast {
     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
     type_ptr typecheck(type_mgr& mgr);
 };
-
-// struct ast_connect : public ast {
-//     ast_ptr left;
-//     ast_ptr right;
-
-//     ast_connect(ast_ptr l, ast_ptr r)
-//         : left(std::move(l)), right(std::move(r)) {}
-
-//     void print(int indent, std::ostream& to) const;
-//     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
-//     type_ptr typecheck(type_mgr& mgr);
-// };
-
-// struct ast_index : public ast {
-//     ast_ptr arr;
-//     ast_ptr ind;
-
-//     ast_index(ast_ptr a, ast_ptr i)
-//         : arr(std::move(a)), ind(std::move(i)) {}
-
-//     void print(int indent, std::ostream& to) const;
-//     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
-//     type_ptr typecheck(type_mgr& mgr);
-// };
 
 struct ast_lid : public ast {
     std::string id;
