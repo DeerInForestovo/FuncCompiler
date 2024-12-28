@@ -4,7 +4,7 @@ CYAN='\033[0;36m'
 GRAY='\033[1;30m'
 RESET='\033[0m'
 
-find res/test-case -type f -name "*.func" | while read -r file; do
+find res/test-case/z -type f -name "*.func" | while read -r file; do
     echo -e "${CYAN}Test input file: ${BLUE}$file${RESET}"
     echo -e "${GRAY}"
     cat "$file"

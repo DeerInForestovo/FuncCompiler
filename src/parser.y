@@ -229,11 +229,11 @@ appUniop  // Apply union-operators
     | appConn { $$ = std::move($1); }
 
 appConn  // Connect two lists
-    : appConn CONNECT appIndex { $$ = ast_ptr(new ast_connect(std::move($1), std::move($3))); }
+    : appConn CONNECT appIndex { $$ = ast_ptr(new ast_binop(CONN, std::move($1), std::move($3))); }
     | appIndex { $$ = std::move($1); }
 
 appIndex  // Index from a list
-    : appIndex INDEX appBase { $$ = ast_ptr(new ast_index(std::move($1), std::move($3))); }
+    : appIndex INDEX appBase { $$ = ast_ptr(new ast_binop(INDEX, std::move($1), std::move($3))); }
     | appBase { $$ = std::move($1); }
 
 appBase

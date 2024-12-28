@@ -20,6 +20,8 @@ std::string binop_name(binop op) {
         case GEQ: return ">=";
         case EQ: return "==";
         case NEQ: return "!=";
+        case INDEX: return "_";
+        case CONN: return "++";
     }
     return "??";
 }
