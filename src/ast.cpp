@@ -23,6 +23,10 @@ type_ptr ast_int::typecheck(type_mgr& mgr) {
     return type_ptr(new type_app(mgr.new_num_type()));  // An Int instance is num-taged-var type
 }
 
+void ast_int::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
+    into.push_back(instruction_ptr(new instruction_pushint(value)));
+}
+
 void ast_float::print(int indent, std::ostream& to) const {
     print_indent(indent, to);
     to << "FLOAT: " << value << std::endl;
@@ -93,6 +97,13 @@ type_ptr ast_lid::typecheck(type_mgr& mgr) {
     return env->lookup(id)->instantiate(mgr);
 }
 
+void ast_lid::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
+    into.push_back(instruction_ptr(
+        env->has_variable(id) ?
+            (instruction*) new instruction_push(env->get_offset(id)) :
+            (instruction*) new instruction_pushglobal(id)));
+}
+
 void ast_uid::print(int indent, std::ostream& to) const {
     print_indent(indent, to);
     to << "UID: " << id << std::endl;
@@ -103,8 +114,11 @@ void ast_uid::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>&
 }
 
 type_ptr ast_uid::typecheck(type_mgr& mgr) {
-    std::cout << "uid typecheck id = " << id << std::endl;
     return env->lookup(id)->instantiate(mgr);
+}
+
+void ast_uid::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
+    into.push_back(instruction_ptr(new instruction_pushglobal(id)));
 }
 
 void ast_binop::print(int indent, std::ostream& to) const {
@@ -303,6 +317,62 @@ type_ptr ast_case::typecheck(type_mgr& mgr) {
     }
 
     return branch_type;
+}
+
+void ast_case::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
+    type_app* app_type = dynamic_cast<type_app*>(input_type.get());
+    type_data* type = dynamic_cast<type_data*>(app_type->constructor.get());
+
+    of->compile(env, into);
+    into.push_back(instruction_ptr(new instruction_eval()));
+
+    instruction_jump* jump_instruction = new instruction_jump();
+    into.push_back(instruction_ptr(jump_instruction));
+    for(auto& branch : branches) {
+        std::vector<instruction_ptr> branch_instructions;
+        pattern_var* vpat;
+        pattern_constr* cpat;
+
+        if((vpat = dynamic_cast<pattern_var*>(branch->pat.get()))) {
+            branch->expr->compile(env_ptr(new env_offset(1, env)), branch_instructions);
+
+            for(auto& constr_pair : type->constructors) {
+                if(jump_instruction->tag_mappings.find(constr_pair.second.tag) !=
+                        jump_instruction->tag_mappings.end())
+                    break;
+
+                jump_instruction->tag_mappings[constr_pair.second.tag] =
+                    jump_instruction->branches.size();
+            }
+            jump_instruction->branches.push_back(std::move(branch_instructions));
+        } else if((cpat = dynamic_cast<pattern_constr*>(branch->pat.get()))) {
+            env_ptr new_env = env;
+            for(auto it = cpat->params.rbegin(); it != cpat->params.rend(); it++) {
+                new_env = env_ptr(new env_var(*it, new_env));
+            }
+
+            branch_instructions.push_back(instruction_ptr(new instruction_split(
+                            cpat->params.size())));
+            branch->expr->compile(new_env, branch_instructions);
+            branch_instructions.push_back(instruction_ptr(new instruction_slide(
+                            cpat->params.size())));
+
+            int new_tag = type->constructors[cpat->constr].tag;
+            if(jump_instruction->tag_mappings.find(new_tag) !=
+                    jump_instruction->tag_mappings.end())
+                throw type_error("technically not a type error: duplicate pattern");
+
+            jump_instruction->tag_mappings[new_tag] =
+                jump_instruction->branches.size();
+            jump_instruction->branches.push_back(std::move(branch_instructions));
+        }
+    }
+
+    for(auto& constr_pair : type->constructors) {
+        if(jump_instruction->tag_mappings.find(constr_pair.second.tag) ==
+                jump_instruction->tag_mappings.end())
+            throw type_error("non-total pattern");
+    }
 }
 
 void pattern_var::print(std::ostream& to) const {

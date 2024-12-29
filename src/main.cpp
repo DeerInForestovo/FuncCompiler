@@ -3,9 +3,19 @@
 #include "binop.hpp"
 #include "definition.hpp"
 #include "graph.hpp"
+#include "instruction.hpp"
+#include "llvm_context.hpp"
 #include "parser.hpp"
 #include "error.hpp"
 #include "type.hpp"
+#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/IR/Verifier.h"
+#include "llvm/Support/TargetSelect.h"
+// #include "llvm/Support/TargetRegistry.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Target/TargetOptions.h"
+#include "llvm/Target/TargetMachine.h"
 
 extern int lexer_error_cnt;
 extern int parser_error_cnt;
@@ -260,6 +270,97 @@ void typecheck_program(
     }
 }
 
+void compile_program(const std::map<std::string, definition_defn_ptr>& defs_defn) {
+    for(auto& def_defn : defs_defn) {
+        def_defn.second->compile();
+
+        for(auto& instruction : def_defn.second->instructions) {
+            instruction->print(0, std::cout);
+        }
+        std::cout << std::endl;
+    }
+}
+
+void gen_llvm_internal_op(llvm_context& ctx, binop op) {
+    auto new_function = ctx.create_custom_function(op_action(op), 2);
+    std::vector<instruction_ptr> instructions;
+    instructions.push_back(instruction_ptr(new instruction_push(1)));
+    instructions.push_back(instruction_ptr(new instruction_eval()));
+    instructions.push_back(instruction_ptr(new instruction_push(1)));
+    instructions.push_back(instruction_ptr(new instruction_eval()));
+    instructions.push_back(instruction_ptr(new instruction_binop(op)));
+    instructions.push_back(instruction_ptr(new instruction_update(2)));
+    instructions.push_back(instruction_ptr(new instruction_pop(2)));
+    ctx.builder.SetInsertPoint(&new_function->getEntryBlock());
+    for(auto& instruction : instructions) {
+        instruction->gen_llvm(ctx, new_function);
+    }
+    ctx.builder.CreateRetVoid();
+}
+
+void output_llvm(llvm_context& ctx, const std::string& filename) {
+    std::string targetTriple = llvm::sys::getDefaultTargetTriple();
+
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmParser();
+    llvm::InitializeNativeTargetAsmPrinter();
+
+    std::string error;
+    const llvm::Target* target =
+        llvm::TargetRegistry::lookupTarget(targetTriple, error);
+    if (!target) {
+        std::cerr << error << std::endl;
+    } else {
+        std::string cpu = "generic";
+        std::string features = "";
+        llvm::TargetOptions options;
+        llvm::TargetMachine* targetMachine =
+            target->createTargetMachine(targetTriple, cpu, features,
+                    options, llvm::Optional<llvm::Reloc::Model>());
+
+        ctx.module.setDataLayout(targetMachine->createDataLayout());
+        ctx.module.setTargetTriple(targetTriple);
+
+        std::error_code ec;
+        llvm::raw_fd_ostream file(filename, ec, llvm::sys::fs::F_None);
+        if (ec) {
+            throw 0;
+        } else {
+            llvm::CodeGenFileType type = llvm::CGFT_ObjectFile;
+            llvm::legacy::PassManager pm;
+            if (targetMachine->addPassesToEmitFile(pm, file, NULL, type)) {
+                throw 0;
+            } else {
+                pm.run(ctx.module);
+                file.close();
+            }
+        }
+    }
+}
+
+void gen_llvm(
+        const std::map<std::string, definition_data_ptr>& defs_data,
+        const std::map<std::string, definition_defn_ptr>& defs_defn) {
+    llvm_context ctx;
+    gen_llvm_internal_op(ctx, PLUS);
+    gen_llvm_internal_op(ctx, MINUS);
+    gen_llvm_internal_op(ctx, TIMES);
+    gen_llvm_internal_op(ctx, DIVIDE);
+
+    for(auto& def_data : defs_data) {
+        def_data.second->generate_llvm(ctx);
+    }
+    for(auto& def_defn : defs_defn) {
+        def_defn.second->declare_llvm(ctx);
+    }
+    for(auto& def_defn : defs_defn) {
+        def_defn.second->generate_llvm(ctx);
+    }
+
+    ctx.module.print(llvm::outs(), nullptr);
+    output_llvm(ctx, "program.o");
+}
+
 int main() {
     yy::parser parser;
     type_mgr mgr;
@@ -285,6 +386,8 @@ int main() {
     }
     try {
         typecheck_program(defs_data, defs_defn, mgr, env);
+        compile_program(defs_defn);
+        gen_llvm(defs_data, defs_defn);
     } catch(unification_error& err) {
         std::cout << "failed to unify types: " << std::endl;
         std::cout << "  (1) \033[34m";

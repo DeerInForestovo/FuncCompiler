@@ -1,9 +1,14 @@
 #include "definition.hpp"
 #include "error.hpp"
 #include "ast.hpp"
+#include "instruction.hpp"
+#include "llvm_context.hpp"
 #include "type.hpp"
 #include "type_env.hpp"
 #include <algorithm>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Type.h>
 
 void definition_defn::find_free(type_mgr& mgr, type_env_ptr& env) {
     this->env = env;
@@ -28,6 +33,28 @@ void definition_defn::insert_types(type_mgr& mgr) {
 void definition_defn::typecheck(type_mgr& mgr) {
     type_ptr body_type = body->typecheck(mgr);
     mgr.unify(return_type, body_type);
+}
+
+void definition_defn::compile() {
+    env_ptr new_env = env_ptr(new env_offset(0, nullptr));
+    for(auto it = params.rbegin(); it != params.rend(); it++) {
+        new_env = env_ptr(new env_var(*it, new_env));
+    }
+    body->compile(new_env, instructions);
+    instructions.push_back(instruction_ptr(new instruction_update(params.size())));
+    instructions.push_back(instruction_ptr(new instruction_pop(params.size())));
+}
+
+void definition_defn::declare_llvm(llvm_context& ctx) {
+    generated_function = ctx.create_custom_function(name, params.size());
+}
+
+void definition_defn::generate_llvm(llvm_context& ctx) {
+    ctx.builder.SetInsertPoint(&generated_function->getEntryBlock());
+    for(auto& instruction : instructions) {
+        instruction->gen_llvm(ctx, generated_function);
+    }
+    ctx.builder.CreateRetVoid();
 }
 
 void definition_data::insert_types(type_env_ptr& env) {
@@ -65,5 +92,22 @@ void definition_data::insert_constructors() const {
         std::transform(vars.begin(), vars.end(), std::back_inserter(full_scheme->forall), 
             [](std::string var) { return std::make_pair(var, false); });
         env->bind(constructor->name, full_scheme);
+    }
+}
+
+void definition_data::generate_llvm(llvm_context& ctx) {
+    for(auto& constructor : constructors) {
+        auto new_function =
+            ctx.create_custom_function(constructor->name, constructor->types.size());
+        std::vector<instruction_ptr> instructions;
+        instructions.push_back(instruction_ptr(
+                new instruction_pack(constructor->tag, constructor->types.size())
+        ));
+        instructions.push_back(instruction_ptr(new instruction_update(0)));
+        ctx.builder.SetInsertPoint(&new_function->getEntryBlock());
+        for (auto& instruction : instructions) {
+            instruction->gen_llvm(ctx, new_function);
+        }
+        ctx.builder.CreateRetVoid();
     }
 }
