@@ -31,7 +31,6 @@ void instruction_pushglobal::gen_llvm(llvm_context& ctx, Function* f) const {
     } catch (std::out_of_range& err) {
         // This is only used during development: some functions/operations have not been implemented yet.
         // Remove this try-catch if all funcs/ops are ready.
-        return;
     }
 }
 
