@@ -4,3 +4,6 @@ input.txt
 input.func
 src/build
 src/examples
+program.o
+a.out
+temp.func

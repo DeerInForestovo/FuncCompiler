@@ -11,7 +11,7 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/TargetSelect.h"
-// #include "llvm/Support/TargetRegistry.h"
+#include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Target/TargetOptions.h"
@@ -282,7 +282,7 @@ void compile_program(const std::map<std::string, definition_defn_ptr>& defs_defn
 }
 
 void gen_llvm_internal_op(llvm_context& ctx, binop op) {
-    auto new_function = ctx.create_custom_function(op_action(op), 2);
+    auto new_function = ctx.create_custom_function(binop_name(op), 2);
     std::vector<instruction_ptr> instructions;
     instructions.push_back(instruction_ptr(new instruction_push(1)));
     instructions.push_back(instruction_ptr(new instruction_eval()));

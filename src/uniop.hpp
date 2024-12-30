@@ -6,3 +6,4 @@ enum uniop {
 };
 
 std::string uniop_name(uniop op);
+std::string uniop_action(uniop op);

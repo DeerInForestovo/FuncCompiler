@@ -24,9 +24,15 @@ void instruction_pushglobal::print(int indent, std::ostream& to) const {
 }
 
 void instruction_pushglobal::gen_llvm(llvm_context& ctx, Function* f) const {
-    auto& global_f = ctx.custom_functions.at("f_" + name);
-    auto arity = ctx.create_i32(global_f->arity);
-    ctx.create_push(f, ctx.create_global(f, global_f->function, arity));
+    try {
+        auto& global_f = ctx.custom_functions.at("f_" + name);
+        auto arity = ctx.create_i32(global_f->arity);
+        ctx.create_push(f, ctx.create_global(f, global_f->function, arity));
+    } catch (std::out_of_range& err) {
+        // This is only used during development: some functions/operations have not been implemented yet.
+        // Remove this try-catch if all funcs/ops are ready.
+        return;
+    }
 }
 
 void instruction_push::print(int indent, std::ostream& to) const {
@@ -133,7 +139,7 @@ void instruction_slide::gen_llvm(llvm_context& ctx, Function* f) const {
 
 void instruction_binop::print(int indent, std::ostream& to) const {
     print_indent(indent, to);
-    to << "BinOp(" << op_action(op) << ")" << std::endl;
+    to << "BinOp(" << binop_name(op) << ")" << std::endl;
 }
 
 void instruction_binop::gen_llvm(llvm_context& ctx, Function* f) const {

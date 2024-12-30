@@ -32,7 +32,7 @@ struct llvm_context {
     llvm::FunctionType* function_type;
 
     llvm_context()
-        : builder(ctx), module("bloglang", ctx) {
+        : builder(ctx), module("FuncCompiler", ctx) {
         create_types();
         create_functions();
     }

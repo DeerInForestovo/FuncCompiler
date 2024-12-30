@@ -9,3 +9,4 @@ enum binop {
 };
 
 std::string binop_name(binop op);
+std::string binop_action(binop op);
