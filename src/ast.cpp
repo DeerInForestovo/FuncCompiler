@@ -268,11 +268,11 @@ void ast_do::compile(const env_ptr& env, std::vector<instruction_ptr>& into) con
 
         if (is_bind) {
             into.push_back(instruction_ptr(new instruction_alloc(1)));
+            cur_env = env_ptr(new env_var(action->bind_name, std::move(cur_env)));
         }
         action->expr->compile(cur_env, into);
         into.push_back(instruction_ptr(new instruction_eval()));
         if (is_bind) {
-            cur_env = env_ptr(new env_var(action->bind_name, std::move(cur_env)));
             into.push_back(instruction_ptr(new instruction_update(0)));
         }
 
