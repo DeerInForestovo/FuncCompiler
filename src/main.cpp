@@ -70,8 +70,32 @@ void typecheck_program(
 
     if (defs_data.find("List") != defs_data.end())
         throw type_error("User self-defined List type.");
-    definition_data_ptr list_type = definition_data_ptr(new 
-            definition_data("List", std::vector<std::string>{"ListArg"}, std::vector<constructor_ptr>()));
+
+    constructor_ptr nil_constructor = constructor_ptr(new constructor("Nil", std::vector<parsed_type_ptr>()));
+
+    parsed_type_ptr list_arg_parsed_type = parsed_type_ptr(new parsed_type_var("ListArg"));
+    parsed_type_ptr list_arg_cons_parsed_type = parsed_type_ptr(new parsed_type_var("ListArg"));
+
+    std::vector<parsed_type_ptr> param_cons_list;
+    param_cons_list.push_back(std::move(list_arg_cons_parsed_type));
+    parsed_type_ptr list_parsed_type = parsed_type_ptr(new parsed_type_app("List", std::move(param_cons_list)));
+
+    std::vector<parsed_type_ptr> param_cons_constructor;
+    param_cons_constructor.push_back(std::move(list_arg_parsed_type));
+    param_cons_constructor.push_back(std::move(list_parsed_type));
+    constructor_ptr cons_constructor = constructor_ptr(new constructor("Cons", std::move(param_cons_constructor)));
+
+    std::vector<constructor_ptr> list_constructors;
+    list_constructors.push_back(std::move(nil_constructor));
+    list_constructors.push_back(std::move(cons_constructor));
+    definition_data_ptr list_type = definition_data_ptr(
+            new definition_data(
+                    "List", 
+                    std::vector<std::string>{"ListArg"}, 
+                    std::move(list_constructors)
+            )
+    );
+
     list_type->insert_types(env);
     list_type->insert_constructors();
     type_ptr list_arg_type = type_ptr(new type_var("ListArg"));
@@ -101,12 +125,12 @@ void typecheck_program(
 
     type_scheme_ptr io_scheme_ptr(new type_scheme(io_type_app));
     io_scheme_ptr->forall.emplace_back("IOArg", false);
-    env->bind("IOSimpleCons", io_scheme_ptr);
+    env->bind("_IOSimpleCons", io_scheme_ptr);
 
     type_ptr io_bind_app(new type_arr(io_arg_type, io_type_app));
     type_scheme_ptr io_bind_scheme_ptr(new type_scheme(io_bind_app));
     io_bind_scheme_ptr->forall.emplace_back("IOArg", false);
-    env->bind("IOBindCons", io_bind_scheme_ptr);
+    env->bind("_IOBindCons", io_bind_scheme_ptr);
 
     // insert all data definitions
     for(auto& def_data : defs_data) {
