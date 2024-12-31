@@ -63,7 +63,7 @@ struct definition_data {
         : name(std::move(n)), vars(std::move(vs)), constructors(std::move(cs)) {}
 
     void insert_types(type_env_ptr& env);
-    void insert_constructors() const;
+    void insert_constructors(bool is_private = false) const;
     void generate_llvm(llvm_context& ctx);
 };
 

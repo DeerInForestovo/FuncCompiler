@@ -62,7 +62,7 @@ void definition_data::insert_types(type_env_ptr& env) {
     env->bind_type(name, type_ptr(new type_data(name, vars.size())));
 }
 
-void definition_data::insert_constructors() const {
+void definition_data::insert_constructors(bool is_private) const {
     type_ptr this_type_ptr = env->lookup_type(name);
     type_data* this_type = static_cast<type_data*>(this_type_ptr.get());
     int next_tag = 0;
@@ -91,7 +91,12 @@ void definition_data::insert_constructors() const {
         full_scheme->forall.reserve(vars.size());
         std::transform(vars.begin(), vars.end(), std::back_inserter(full_scheme->forall), 
             [](std::string var) { return std::make_pair(var, false); });
-        env->bind(constructor->name, full_scheme);
+        
+        if (is_private) {
+            env->bind_private(constructor->name, full_scheme);
+        } else {
+            env->bind(constructor->name, full_scheme);
+        }
     }
 }
 

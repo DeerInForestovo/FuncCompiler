@@ -69,10 +69,35 @@ void typecheck_program(
 
     if (defs_data.find("List") != defs_data.end())
         throw type_error("User self-defined List type.");
-    definition_data_ptr list_type = definition_data_ptr(new 
-            definition_data("List", std::vector<std::string>{"ListArg"}, std::vector<constructor_ptr>()));
+
+    constructor_ptr nil_constructor = constructor_ptr(new constructor("Nil", std::vector<parsed_type_ptr>()));
+
+    parsed_type_ptr list_arg_parsed_type = parsed_type_ptr(new parsed_type_var("ListArg"));
+    parsed_type_ptr list_arg_cons_parsed_type = parsed_type_ptr(new parsed_type_var("ListArg"));
+
+    std::vector<parsed_type_ptr> param_cons_list;
+    param_cons_list.push_back(std::move(list_arg_cons_parsed_type));
+    parsed_type_ptr list_parsed_type = parsed_type_ptr(new parsed_type_app("List", std::move(param_cons_list)));
+
+    std::vector<parsed_type_ptr> param_cons_constructor;
+    param_cons_constructor.push_back(std::move(list_arg_parsed_type));
+    param_cons_constructor.push_back(std::move(list_parsed_type));
+    constructor_ptr cons_constructor = constructor_ptr(new constructor("Cons", std::move(param_cons_constructor)));
+
+    std::vector<constructor_ptr> list_constructors;
+    list_constructors.push_back(std::move(nil_constructor));
+    list_constructors.push_back(std::move(cons_constructor));
+    definition_data_ptr list_type = definition_data_ptr(
+            new definition_data(
+                    "List", 
+                    std::vector<std::string>{"ListArg"}, 
+                    std::move(list_constructors)
+            )
+    );
+
     list_type->insert_types(env);
-    list_type->insert_constructors();
+    list_type->insert_constructors(true);
+    
     type_ptr list_arg_type = type_ptr(new type_var("ListArg"));
     type_app *list_app = new type_app(type_ptr(env->lookup_type("List")));
     list_app->arguments.emplace_back(list_arg_type);
