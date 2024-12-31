@@ -27,6 +27,16 @@ struct instruction_pushint : public instruction {
     void gen_llvm(llvm_context& ctx, llvm::Function* f) const;
 };
 
+struct instruction_pushfloat : public instruction {
+    float value;
+
+    instruction_pushfloat(float v)
+        : value(v) {}
+
+    void print(int indent, std::ostream& to) const;
+    void gen_llvm(llvm_context& ctx, llvm::Function* f) const;
+};
+
 struct instruction_pushglobal : public instruction {
     std::string name;
 

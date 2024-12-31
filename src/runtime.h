@@ -6,6 +6,7 @@ struct gmachine;
 enum node_tag {
     NODE_APP,
     NODE_NUM,
+    NODE_FLOAT,
     NODE_GLOBAL,
     NODE_IND,
     NODE_DATA
@@ -28,6 +29,11 @@ struct node_num {
     int32_t value;
 };
 
+struct node_float {
+    struct node_base base;
+    float value;
+};
+
 struct node_global {
     struct node_base base;
     int32_t arity;
@@ -48,6 +54,7 @@ struct node_data {
 struct node_base* alloc_node();
 struct node_app* alloc_app(struct node_base* l, struct node_base* r);
 struct node_num* alloc_num(int32_t n);
+struct node_float* alloc_float(float n);
 struct node_global* alloc_global(void (*f)(struct gmachine*), int32_t a);
 struct node_ind* alloc_ind(struct node_base* n);
 void free_node_direct(struct node_base*);

@@ -248,9 +248,9 @@ void typecheck_program(
         }
         for(auto& def_defnn_name : group->members) {
             auto& def_defn = defs_defn.find(def_defnn_name)->second;
-            std::cout << "begin typecheck " << def_defnn_name << std::endl;
+            // std::cout << "begin typecheck " << def_defnn_name << std::endl;
             def_defn->typecheck(mgr);
-            std::cout << "finish typecheck " << def_defnn_name << std::endl;
+            // std::cout << "finish typecheck " << def_defnn_name << std::endl;
         }
         for(auto& def_defnn_name : group->members) {
             // std::cout << "begin generalize " << def_defnn_name << std::endl;
@@ -281,7 +281,7 @@ void compile_program(const std::map<std::string, definition_defn_ptr>& defs_defn
     }
 }
 
-void gen_llvm_internal_op(llvm_context& ctx, binop op) {
+void gen_llvm_internal_binop(llvm_context& ctx, binop op) {
     auto new_function = ctx.create_custom_function(binop_action(op), 2);
     std::vector<instruction_ptr> instructions;
     instructions.push_back(instruction_ptr(new instruction_push(1)));
@@ -342,17 +342,24 @@ void gen_llvm(
         const std::map<std::string, definition_data_ptr>& defs_data,
         const std::map<std::string, definition_defn_ptr>& defs_defn) {
     llvm_context ctx;
-    gen_llvm_internal_op(ctx, PLUS);
-    gen_llvm_internal_op(ctx, MINUS);
-    gen_llvm_internal_op(ctx, TIMES);
-    gen_llvm_internal_op(ctx, DIVIDE);
 
+    std::cout << "Generating LLVM: internal binops." << std::endl;
+    gen_llvm_internal_binop(ctx, PLUS);
+    gen_llvm_internal_binop(ctx, MINUS);
+    gen_llvm_internal_binop(ctx, TIMES);
+    gen_llvm_internal_binop(ctx, DIVIDE);
+
+    std::cout << "Generating LLVM: Data." << std::endl;
     for(auto& def_data : defs_data) {
         def_data.second->generate_llvm(ctx);
     }
+
+    std::cout << "Generating LLVM: Declare functions." << std::endl;
     for(auto& def_defn : defs_defn) {
         def_defn.second->declare_llvm(ctx);
     }
+
+    std::cout << "Generating LLVM: Functions." << std::endl;
     for(auto& def_defn : defs_defn) {
         def_defn.second->generate_llvm(ctx);
     }
@@ -377,7 +384,6 @@ int main() {
     }
     std::cout << "Parsing finished." << std::endl;
 
-    std::cout << "Type checking begin:" << std::endl;
     for(auto& def_defn : defs_defn) {
         std::cout << def_defn.second->name;
         for(auto& param : def_defn.second->params) std::cout << " " << param;
@@ -385,9 +391,17 @@ int main() {
         def_defn.second->body->print(1, std::cout);
     }
     try {
+        std::cout << "Type checking begin:" << std::endl;
         typecheck_program(defs_data, defs_defn, mgr, env);
+        std::cout << "Type checking finished." << std::endl;
+
+        std::cout << "Compilation begin:" << std::endl;
         compile_program(defs_defn);
+        std::cout << "Compilation finished." << std::endl;
+
+        std::cout << "LLVM Generation begin:" << std::endl;
         gen_llvm(defs_data, defs_defn);
+        std::cout << "LLVM Generation finished." << std::endl;
     } catch(unification_error& err) {
         std::cout << "failed to unify types: " << std::endl;
         std::cout << "  (1) \033[34m";
@@ -399,5 +413,4 @@ int main() {
     } catch(type_error& err) {
         std::cout << "failed to type check program: " << err.description << std::endl;
     }
-    std::cout << "Type checking finished." << std::endl;
 }

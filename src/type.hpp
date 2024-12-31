@@ -96,3 +96,5 @@ struct type_mgr {
     bool bind(type_var* s, type_ptr t);  // return bind success or not
     void find_free(const type_ptr& t, std::set<std::pair<std::string, bool>>& into) const;
 };
+
+using type_mgr_ptr = std::shared_ptr<type_mgr>;

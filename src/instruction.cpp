@@ -18,6 +18,15 @@ void instruction_pushint::gen_llvm(llvm_context& ctx, Function* f) const {
     ctx.create_push(f, ctx.create_num(f, ctx.create_i32(value)));
 }
 
+void instruction_pushfloat::print(int indent, std::ostream& to) const {
+    print_indent(indent, to);
+    to << "PushFloat(" << value << ")" << std::endl;
+}
+
+void instruction_pushfloat::gen_llvm(llvm_context& ctx, Function* f) const {
+    ctx.create_push(f, ctx.create_float(f, ctx.create_f32(value)));
+}
+
 void instruction_pushglobal::print(int indent, std::ostream& to) const {
     print_indent(indent, to);
     to << "PushGlobal(" << name << ")" << std::endl;

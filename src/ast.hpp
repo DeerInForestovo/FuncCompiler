@@ -11,6 +11,7 @@
 
 struct ast {
     type_env_ptr env;
+    type_ptr return_type;
 
     virtual ~ast() = default;
 

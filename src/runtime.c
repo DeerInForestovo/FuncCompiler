@@ -11,6 +11,8 @@ void print_stack(struct stack* s) {
         struct node_base* node = s->data[i];
         if (node->tag == NODE_NUM) {
             printf("[Num: %d] ", ((struct node_num*)node)->value);
+        } else if (node->tag == NODE_FLOAT) {
+            printf("[Float: %f] ", ((struct node_float*)node)->value);
         } else if (node->tag == NODE_GLOBAL) {
             printf("[Global: %p] ", ((struct node_global*)node)->function);
         } else if (node->tag == NODE_APP) {
@@ -43,6 +45,13 @@ struct node_app* alloc_app(struct node_base* l, struct node_base* r) {
 struct node_num* alloc_num(int32_t n) {
     struct node_num* node = (struct node_num*) alloc_node();
     node->base.tag = NODE_NUM;
+    node->value = n;
+    return node;
+}
+
+struct node_float* alloc_float(float n) {
+    struct node_float* node = (struct node_float*) alloc_node();
+    node->base.tag = NODE_FLOAT;
     node->value = n;
     return node;
 }
@@ -284,6 +293,9 @@ void print_node(struct node_base* n) {
     } else if(n->tag == NODE_NUM) {
         struct node_num* num = (struct node_num*) n;
         printf("%d", num->value);
+    } else if(n->tag == NODE_FLOAT) {
+        struct node_float* num = (struct node_float*) n;
+        printf("%f", num->value);
     }
 }
 

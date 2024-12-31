@@ -12,6 +12,7 @@ void llvm_context::create_types() {
     struct_types["node_base"] = StructType::create(ctx, "node_base");
     struct_types["node_app"] = StructType::create(ctx, "node_app");
     struct_types["node_num"] = StructType::create(ctx, "node_num");
+    struct_types["node_float"] = StructType::create(ctx, "node_float");
     struct_types["node_global"] = StructType::create(ctx, "node_global");
     struct_types["node_ind"] = StructType::create(ctx, "node_ind");
     struct_types["node_data"] = StructType::create(ctx, "node_data");
@@ -37,6 +38,10 @@ void llvm_context::create_types() {
     struct_types.at("node_num")->setBody(
             struct_types.at("node_base"),
             IntegerType::getInt32Ty(ctx)
+    );
+    struct_types.at("node_float")->setBody(
+            struct_types.at("node_base"),
+            Type::getFloatTy(ctx)
     );
     struct_types.at("node_global")->setBody(
             struct_types.at("node_base"),
@@ -130,6 +135,7 @@ void llvm_context::create_functions() {
     );
 
     auto int32_type = IntegerType::getInt32Ty(ctx);
+    auto float32_type = llvm::Type::getFloatTy(ctx);
     functions["alloc_app"] = Function::Create(
             FunctionType::get(node_ptr_type, { node_ptr_type, node_ptr_type }, false),
             Function::LinkageTypes::ExternalLinkage,
@@ -140,6 +146,12 @@ void llvm_context::create_functions() {
             FunctionType::get(node_ptr_type, { int32_type }, false),
             Function::LinkageTypes::ExternalLinkage,
             "alloc_num",
+            &module
+    );
+    functions["alloc_float"] = Function::Create(
+            FunctionType::get(node_ptr_type, { float32_type }, false),
+            Function::LinkageTypes::ExternalLinkage,
+            "alloc_float",
             &module
     );
     functions["alloc_global"] = Function::Create(
@@ -171,6 +183,10 @@ ConstantInt* llvm_context::create_i32(int32_t i) {
 }
 ConstantInt* llvm_context::create_size(size_t i) {
     return ConstantInt::get(ctx, APInt(sizeof(size_t) * 8, i));
+}
+
+ConstantFP* llvm_context::create_f32(float_t f) {
+    return ConstantFP::get(ctx, APFloat(f));
 }
 
 Value* llvm_context::create_pop(Function* f) {
@@ -232,10 +248,24 @@ Value* llvm_context::unwrap_num(Value* v) {
     auto int_ptr = builder.CreateGEP(cast, { offset_0, offset_1 });
     return builder.CreateLoad(int_ptr);
 }
+Value* llvm_context::unwrap_float(Value* v) {
+    auto float_ptr_type = PointerType::getUnqual(struct_types.at("node_float"));
+    auto cast = builder.CreatePointerCast(v, float_ptr_type);
+    auto offset_0 = create_i32(0);  // Not "create_f32(0)" here.
+    auto offset_1 = create_i32(1);
+    auto float_ptr = builder.CreateGEP(cast, { offset_0, offset_1 });
+    return builder.CreateLoad(float_ptr);
+}
+
 Value* llvm_context::create_num(Function* f, Value* v) {
     auto alloc_num_f = functions.at("alloc_num");
     auto alloc_num_call = builder.CreateCall(alloc_num_f, { v });
     return create_track(f, alloc_num_call);
+}
+Value* llvm_context::create_float(Function* f, Value* v) {
+    auto alloc_float_f = functions.at("alloc_float");
+    auto alloc_float_call = builder.CreateCall(alloc_float_f, { v });
+    return create_track(f, alloc_float_call);
 }
 
 Value* llvm_context::unwrap_data_tag(Value* v) {

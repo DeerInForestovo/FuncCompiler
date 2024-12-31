@@ -20,7 +20,7 @@ void ast_int::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>&
 
 type_ptr ast_int::typecheck(type_mgr& mgr) {
     // return type_ptr(new type_app(env->lookup_type("Int")));  // Do NOT use this
-    return type_ptr(new type_app(mgr.new_num_type()));  // An Int instance is num-taged-var type
+    return this->return_type = type_ptr(new type_app(mgr.new_num_type()));  // An Int instance is num-taged-var type
 }
 
 void ast_int::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
@@ -37,10 +37,11 @@ void ast_float::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string
 }
 
 type_ptr ast_float::typecheck(type_mgr& mgr) {
-    return type_ptr(new type_app(env->lookup_type("Float")));
+    return this->return_type = type_ptr(new type_app(env->lookup_type("Float")));
 }
 
 void ast_float::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
+    into.push_back(instruction_ptr(new instruction_pushfloat(value)));
 }
 
 void ast_list::print(int indent, std::ostream& to) const {
@@ -62,7 +63,7 @@ type_ptr ast_list::typecheck(type_mgr& mgr) {
     type_app* list_app = new type_app(list_type);
     list_app->arguments.emplace_back(arg_type);
     type_ptr list_app_type = type_ptr(list_app);
-    return list_app_type;
+    return this->return_type = list_app_type;
 }
 
 void ast_list::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
@@ -86,7 +87,7 @@ void ast_char::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>
 }
 
 type_ptr ast_char::typecheck(type_mgr& mgr) {
-    return type_ptr(new type_app(env->lookup_type("Char")));
+    return this->return_type = type_ptr(new type_app(env->lookup_type("Char")));
 }
 
 void ast_char::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
@@ -103,7 +104,7 @@ void ast_lid::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>&
 }
 
 type_ptr ast_lid::typecheck(type_mgr& mgr) {
-    return env->lookup(id)->instantiate(mgr);
+    return this->return_type = env->lookup(id)->instantiate(mgr);
 }
 
 void ast_lid::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
@@ -123,7 +124,7 @@ void ast_uid::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>&
 }
 
 type_ptr ast_uid::typecheck(type_mgr& mgr) {
-    return env->lookup(id)->instantiate(mgr);
+    return this->return_type = env->lookup(id)->instantiate(mgr);
 }
 
 void ast_uid::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
@@ -154,7 +155,7 @@ type_ptr ast_binop::typecheck(type_mgr& mgr) {
     type_ptr arrow_two = type_ptr(new type_arr(ltype, arrow_one));
 
     mgr.unify(arrow_two, ftype);
-    return return_type;
+    return this->return_type = return_type;
 }
 
 void ast_binop::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
@@ -184,7 +185,7 @@ type_ptr ast_uniop::typecheck(type_mgr& mgr) {
     type_ptr return_type = mgr.new_type();
     type_ptr arrow_type = type_ptr(new type_arr(otype, return_type));
     mgr.unify(arrow_type, ftype);
-    return return_type;
+    return this->return_type = return_type;
 }
 
 void ast_uniop::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
@@ -210,7 +211,7 @@ type_ptr ast_app::typecheck(type_mgr& mgr) {
     type_ptr return_type = mgr.new_type();
     type_ptr arrow = type_ptr(new type_arr(rtype, return_type));
     mgr.unify(arrow, ltype);
-    return return_type;
+    return this->return_type = return_type;
 }
 
 void ast_app::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
@@ -249,7 +250,7 @@ type_ptr ast_do::typecheck(type_mgr &mgr) {
     }
 
     mgr.unify(return_type, last_type);
-    return return_type;
+    return this->return_type = return_type;
 }
 
 void ast_do::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
@@ -346,7 +347,7 @@ type_ptr ast_case::typecheck(type_mgr& mgr) {
         throw type_error("attempting case analysis of non-data type");
     }
 
-    return branch_type;
+    return this->return_type = branch_type;
 }
 
 void ast_case::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
