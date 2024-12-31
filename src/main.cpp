@@ -81,7 +81,7 @@ void typecheck_program(
 
     type_ptr list_bind_app(new type_arr(list_arg_type, list_type_app));
     type_scheme_ptr list_bind_scheme_ptr(new type_scheme(list_bind_app));
-    io_bind_scheme_ptr->forall.emplace_back("ListArg", false);
+    list_bind_scheme_ptr->forall.emplace_back("ListArg", false);
 
     // add empty
     definition_data_ptr empty_type = definition_data_ptr(
