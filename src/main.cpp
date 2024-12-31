@@ -96,12 +96,12 @@ void typecheck_program(
 
     type_scheme_ptr io_scheme_ptr(new type_scheme(io_type_app));
     io_scheme_ptr->forall.emplace_back("IOArg", false);
-    env->bind("IOSimpleCons", io_scheme_ptr);
+    env->bind_private("IOSimpleCons", io_scheme_ptr);
 
     type_ptr io_bind_app(new type_arr(io_arg_type, io_type_app));
     type_scheme_ptr io_bind_scheme_ptr(new type_scheme(io_bind_app));
     io_bind_scheme_ptr->forall.emplace_back("IOArg", false);
-    env->bind("IOBindCons", io_bind_scheme_ptr);
+    env->bind_private("IOBindCons", io_bind_scheme_ptr);
 
     // insert all data definitions
     for(auto& def_data : defs_data) {

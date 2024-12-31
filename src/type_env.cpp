@@ -10,6 +10,13 @@ type_scheme_ptr type_env::lookup(const std::string& name) const {
     return nullptr;
 }
 
+type_scheme_ptr type_env::lookup_private(const std::string& name) const {
+    auto it = private_names.find(name);
+    if(it != private_names.end()) return it->second;
+    if(parent) return parent->lookup_private(name);
+    return nullptr;
+}
+
 type_ptr type_env::lookup_type(const std::string& name) const {
     auto it = type_names.find(name);
     if(it != type_names.end()) return it->second;
@@ -23,6 +30,14 @@ void type_env::bind(const std::string& name, type_ptr t) {
 
 void type_env::bind(const std::string& name, type_scheme_ptr t) {
     names[name] = t;
+}
+
+void type_env::bind_private(const std::string& name, type_ptr t) {
+    private_names[name] = type_scheme_ptr(new type_scheme(t));
+}
+
+void type_env::bind_private(const std::string& name, type_scheme_ptr t) {
+    private_names[name] = t;
 }
 
 void type_env::bind_type(const std::string& type_name, type_ptr t) {
