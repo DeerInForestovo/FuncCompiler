@@ -5,27 +5,6 @@
 #include "runtime.h"
 #include <stdlib.h>
 
-void print_stack(struct stack* s) {
-    printf("Stack (count: %zu): ", s->count);
-    for (size_t i = 0; i < s->count; i++) {
-        struct node_base* node = s->data[i];
-        if (node->tag == NODE_NUM) {
-            printf("[Num: %d] ", ((struct node_num*)node)->value);
-        } else if (node->tag == NODE_FLOAT) {
-            printf("[Float: %f] ", ((struct node_float*)node)->value);
-        } else if (node->tag == NODE_GLOBAL) {
-            printf("[Global: %p] ", ((struct node_global*)node)->function);
-        } else if (node->tag == NODE_APP) {
-            printf("[App] ");
-        } else if (node->tag == NODE_IND) {
-            printf("[Ind] ");
-        } else {
-            printf("[Unknown] ");
-        }
-    }
-    printf("\n");
-}
-
 struct node_base* alloc_node() {
     struct node_base* new_node = malloc(sizeof(struct node_app));
     new_node->gc_next = NULL;
@@ -153,18 +132,12 @@ void gmachine_free(struct gmachine* g) {
 }
 
 void gmachine_slide(struct gmachine* g, size_t n) {
-    printf("gmachine_slide called with n = %zu\n", n);
-    print_stack(&g->stack);
-
     assert(g->stack.count > n);
     g->stack.data[g->stack.count - n - 1] = g->stack.data[g->stack.count - 1];
     g->stack.count -= n;
 }
 
 void gmachine_update(struct gmachine* g, size_t o) {
-    printf("gmachine_update called with offset %zu\n", o);
-    print_stack(&g->stack);
-
     assert(g->stack.count > o + 1); // Verify enough elements
     struct node_ind* ind =
         (struct node_ind*)g->stack.data[g->stack.count - o - 2];
@@ -173,9 +146,6 @@ void gmachine_update(struct gmachine* g, size_t o) {
 }
 
 void gmachine_alloc(struct gmachine* g, size_t o) {
-    printf("gmachine_alloc called with offset %zu\n", o);
-    print_stack(&g->stack);
-
     while(o--) {
         stack_push(&g->stack,
                 gmachine_track(g, (struct node_base*) alloc_ind(NULL)));
@@ -183,9 +153,6 @@ void gmachine_alloc(struct gmachine* g, size_t o) {
 }
 
 void gmachine_pack(struct gmachine* g, size_t n, int8_t t) {
-    printf("gmachine_pack called with n = %zu\n", n);
-    print_stack(&g->stack);
-
     assert(g->stack.count >= n);
 
     struct node_base** data = malloc(sizeof(*data) * (n + 1));
@@ -203,9 +170,6 @@ void gmachine_pack(struct gmachine* g, size_t n, int8_t t) {
 }
 
 void gmachine_split(struct gmachine* g, size_t n) {
-    printf("gmachine_split called with n = %zu\n", n);
-    print_stack(&g->stack);
-
     struct node_data* node = (struct node_data*) stack_pop(&g->stack);
     for(size_t i = 0; i < n; i++) {
         stack_push(&g->stack, node->array[i]);
