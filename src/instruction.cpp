@@ -159,6 +159,13 @@ void instruction_binop::gen_llvm(llvm_context& ctx, Function* f) const {
         case MINUS: result = ctx.builder.CreateSub(left_int, right_int); break;
         case TIMES: result = ctx.builder.CreateMul(left_int, right_int); break;
         case DIVIDE: result = ctx.builder.CreateSDiv(left_int, right_int); break;
+        case BMOD: result = ctx.builder.CreateSRem(left_int, right_int); break;
+        case LMOVE: result = ctx.builder.CreateShl(left_int, right_int); break;
+        case RMOVE: result = ctx.builder.CreateAShr(left_int, right_int); break;
+        case BITAND: result = ctx.builder.CreateAnd(left_int, right_int); break;
+        case BITOR: result = ctx.builder.CreateOr(left_int, right_int); break;
+        case XOR: result = ctx.builder.CreateXor(left_int, right_int); break;
+
     }
     ctx.create_push(f, ctx.create_num(f, result));
 }

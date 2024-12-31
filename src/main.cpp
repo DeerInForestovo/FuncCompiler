@@ -348,6 +348,12 @@ void gen_llvm(
     gen_llvm_internal_binop(ctx, MINUS);
     gen_llvm_internal_binop(ctx, TIMES);
     gen_llvm_internal_binop(ctx, DIVIDE);
+    gen_llvm_internal_binop(ctx, BMOD);
+    gen_llvm_internal_binop(ctx, LMOVE);
+    gen_llvm_internal_binop(ctx, RMOVE);
+    gen_llvm_internal_binop(ctx, BITAND);
+    gen_llvm_internal_binop(ctx, BITOR);
+    gen_llvm_internal_binop(ctx, XOR);
 
     std::cout << "Generating LLVM: Data." << std::endl;
     for(auto& def_data : defs_data) {
