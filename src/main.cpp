@@ -216,11 +216,8 @@ void typecheck_program(
     type_ptr io_empty_type = mgr.new_type();
     mgr.unify(type_ptr(new type_arr(empty_type_app, io_empty_type)), io_bind_scheme_ptr->instantiate(mgr));
 
-    type_ptr print_var_type = type_ptr(new type_var("PrintVar"));
-    type_ptr print_type(new type_arr(print_var_type, io_empty_type));
-    type_scheme_ptr print_scheme_ptr(new type_scheme(print_type));
-    print_scheme_ptr->forall.emplace_back("PrintVar", false);
-    env->bind("print", print_scheme_ptr);
+    type_ptr print_type(new type_arr(string_type, io_empty_type));
+    env->bind("print", print_type);
     prelude_func.insert("print");
 
     // std::cout << "Insert prelude functions, finished." << std::endl;
