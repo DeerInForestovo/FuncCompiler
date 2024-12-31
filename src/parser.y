@@ -61,7 +61,7 @@ void yyerror(const std::string &msg) {
 %define api.token.constructor
 
 %type <std::vector<std::string>> lowercaseParams
-%type <std::vector<branch_ptr>> branches
+%type <std::vector<branch_ptr>> branches branchesDo
 %type <std::vector<constructor_ptr>> constructors
 %type <action_ptr> action bind
 %type <std::vector<action_ptr>> actions actionOrBinds
@@ -70,7 +70,7 @@ void yyerror(const std::string &msg) {
 %type <ast_ptr> aAdd aMul case app appBase appIndex appConn appUniop aOr aAnd aBitor aXor aBitand aCmpeq aCmp aMove list
 %type <definition_data_ptr> data 
 %type <definition_defn_ptr> defn
-%type <branch_ptr> branch
+%type <branch_ptr> branch branchDo
 %type <pattern_ptr> pattern
 %type <constructor_ptr> constructor
 %type <std::vector<ast_ptr>> termlist
@@ -116,6 +116,17 @@ defn
         yyerror("Named a function with UID."); }
     ;
 
+branchesDo
+    : branchesDo branchDo { $$ = std::move($1); $$.push_back(std::move($2)); }
+    | branchDo { $$ = std::vector<branch_ptr>(); $$.push_back(std::move($1));}
+    ;
+
+branchDo
+    : pattern ARROW DO OCURLY actions CCURLY
+        { $$ = branch_ptr(new branch(std::move($1), ast_ptr(new ast_do(std::move($5))))); }
+    | pattern ARROW DO OCURLY actions error { $$ = branch_ptr(new branch(std::move($1), ast_ptr(new ast_do(std::move($5))))); yyerror("Unmatched '{'."); }
+    ;
+
 actions
     : actionOrBinds action { $$ = std::move($1); $$.push_back(std::move($2)); }
     ;
@@ -132,6 +143,8 @@ bind
 action
     : OCURLY aOr CCURLY { $$ = action_ptr(new action_exec(std::move($2))); }
     | RETURN OCURLY aOr CCURLY { $$ = action_ptr(new action_return(std::move($3))); }
+    | CASE aOr OF OCURLY branchesDo CCURLY 
+        { $$ = action_ptr(new action_exec(ast_ptr(new ast_case(std::move($2), std::move($5))))); }
     | OCURLY error CCURLY { yyerror("Illegal expr."); $$ = action_ptr(new action_exec(ast_ptr(new ast_int(0)))); }
     | RETURN OCURLY error CCURLY { yyerror("Illegal expr."); $$ = action_ptr(new action_return(ast_ptr(new ast_int(0)))); }
     ;
