@@ -253,6 +253,33 @@ type_ptr ast_do::typecheck(type_mgr &mgr) {
 }
 
 void ast_do::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
+    bool last_bind = true;
+    int bind_num = 0;
+
+    env_ptr cur_env = env;
+
+    for (auto& action: actions) {
+        if (!last_bind) {
+            into.push_back(instruction_ptr(new instruction_pop(1)));
+        }
+
+        bool is_bind = !action->bind_name.empty();
+        bind_num += is_bind;
+
+        if (is_bind) {
+            into.push_back(instruction_ptr(new instruction_alloc(1)));
+        }
+        action->expr->compile(cur_env, into);
+        into.push_back(instruction_ptr(new instruction_eval()));
+        if (is_bind) {
+            cur_env = env_ptr(new env_var(action->bind_name, std::move(cur_env)));
+            into.push_back(instruction_ptr(new instruction_update(0)));
+        }
+
+        last_bind = !action->bind_name.empty();
+    }
+
+    into.push_back(instruction_ptr(new instruction_slide(bind_num)));
 }
 
 void action::insert_binding(type_mgr &mgr, type_env_ptr &env) {
