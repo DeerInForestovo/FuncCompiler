@@ -8,6 +8,7 @@
 #include "parser.hpp"
 #include "error.hpp"
 #include "type.hpp"
+#include "prelude.hpp"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/TargetSelect.h"
@@ -98,14 +99,6 @@ void typecheck_program(
 
     list_type->insert_types(env);
     list_type->insert_constructors();
-    type_ptr list_arg_type = type_ptr(new type_var("ListArg"));
-    type_app *list_app = new type_app(type_ptr(env->lookup_type("List")));
-    list_app->arguments.emplace_back(list_arg_type);
-    type_ptr list_type_app = type_ptr(list_app);
-
-    type_ptr list_bind_app(new type_arr(list_arg_type, list_type_app));
-    type_scheme_ptr list_bind_scheme_ptr(new type_scheme(list_bind_app));
-    list_bind_scheme_ptr->forall.emplace_back("ListArg", false);
 
     // add empty
     definition_data_ptr empty_type = definition_data_ptr(
@@ -141,6 +134,15 @@ void typecheck_program(
         def_data.second->insert_constructors();
     }
     std::cout << "insert_constructors, finished." << std::endl;
+
+    type_ptr list_arg_type = type_ptr(new type_var("ListArg"));
+    type_app *list_app = new type_app(type_ptr(env->lookup_type("List")));
+    list_app->arguments.emplace_back(list_arg_type);
+    type_ptr list_type_app = type_ptr(list_app);
+
+    type_ptr list_bind_app(new type_arr(list_arg_type, list_type_app));
+    type_scheme_ptr list_bind_scheme_ptr(new type_scheme(list_bind_app));
+    list_bind_scheme_ptr->forall.emplace_back("ListArg", false);
 
     /*
         Bind op types
@@ -379,6 +381,10 @@ void gen_llvm(
     for(auto& def_data : defs_data) {
         def_data.second->generate_llvm(ctx);
     }
+
+    generate_read_llvm(ctx);
+    generate_print_llvm(ctx);
+
     for(auto& def_defn : defs_defn) {
         def_defn.second->declare_llvm(ctx);
     }
