@@ -381,6 +381,8 @@ void gen_llvm(
         def_data.second->generate_llvm(ctx);
     }
 
+    gen_llvm_internal_op(ctx, CONN);
+
     generate_read_llvm(ctx);
     generate_print_llvm(ctx);
 
