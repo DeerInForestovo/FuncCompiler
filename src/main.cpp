@@ -31,7 +31,7 @@ extern std::map<std::string, definition_data_ptr> defs_data;
 extern std::map<std::string, definition_defn_ptr> defs_defn;
 
 void typecheck_program(
-        const std::map<std::string, definition_data_ptr>& defs_data,
+        std::map<std::string, definition_data_ptr>& defs_data,
         const std::map<std::string, definition_defn_ptr>& defs_defn,
         type_mgr& mgr, type_env_ptr& env) {
     /*
@@ -97,8 +97,7 @@ void typecheck_program(
             )
     );
 
-    list_type->insert_types(env);
-    list_type->insert_constructors();
+    defs_data["List"] = std::move(list_type);
 
     // add empty
     definition_data_ptr empty_type = definition_data_ptr(
