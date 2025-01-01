@@ -30,7 +30,7 @@ extern std::map<std::string, definition_data_ptr> defs_data;
 extern std::map<std::string, definition_defn_ptr> defs_defn;
 
 void typecheck_program(
-        const std::map<std::string, definition_data_ptr>& defs_data,
+        std::map<std::string, definition_data_ptr>& defs_data,
         const std::map<std::string, definition_defn_ptr>& defs_defn,
         type_mgr& mgr, type_env_ptr& env) {
     /*
@@ -55,15 +55,14 @@ void typecheck_program(
     // data types
     if (defs_data.find("Bool") != defs_data.end())
         throw type_error("User self-defined Bool type.");
-    constructor_ptr true_constructor = constructor_ptr(new constructor("True", std::vector<parsed_type_ptr>()));
     constructor_ptr false_constructor = constructor_ptr(new constructor("False", std::vector<parsed_type_ptr>()));
+    constructor_ptr true_constructor = constructor_ptr(new constructor("True", std::vector<parsed_type_ptr>()));
     std::vector<constructor_ptr> bool_constructors;
-    bool_constructors.push_back(std::move(true_constructor));
     bool_constructors.push_back(std::move(false_constructor));
+    bool_constructors.push_back(std::move(true_constructor));
     definition_data_ptr bool_type = definition_data_ptr(new 
             definition_data("Bool", std::vector<std::string>(), std::move(bool_constructors)));
-    bool_type->insert_types(env);
-    bool_type->insert_constructors();
+    defs_data["Bool"] = std::move(bool_type);
     type_ptr bool_type_app = type_ptr(new type_app(
             type_ptr(new type_data("Bool"))));
 
@@ -71,8 +70,7 @@ void typecheck_program(
         throw type_error("User self-defined List type.");
     definition_data_ptr list_type = definition_data_ptr(new 
             definition_data("List", std::vector<std::string>{"ListArg"}, std::vector<constructor_ptr>()));
-    list_type->insert_types(env);
-    list_type->insert_constructors();
+    defs_data["List"] = std::move(list_type);
     type_ptr list_arg_type = type_ptr(new type_var("ListArg"));
     type_app *list_app = new type_app(type_ptr(env->lookup_type("List")));
     list_app->arguments.emplace_back(list_arg_type);
@@ -354,6 +352,12 @@ void gen_llvm(
     gen_llvm_internal_binop(ctx, BITAND);
     gen_llvm_internal_binop(ctx, BITOR);
     gen_llvm_internal_binop(ctx, XOR);
+    gen_llvm_internal_binop(ctx, LT);
+    gen_llvm_internal_binop(ctx, GT);
+    gen_llvm_internal_binop(ctx, LEQ);
+    gen_llvm_internal_binop(ctx, GEQ);
+    gen_llvm_internal_binop(ctx, EQ);
+    gen_llvm_internal_binop(ctx, NEQ);
 
     std::cout << "Generating LLVM: Data." << std::endl;
     for(auto& def_data : defs_data) {

@@ -154,6 +154,12 @@ void llvm_context::create_functions() {
             "alloc_float",
             &module
     );
+    functions["alloc_data"] = Function::Create(
+            FunctionType::get(node_ptr_type, { IntegerType::getInt8Ty(ctx), IntegerType::get(ctx, sizeof(size_t) * 8) }, false),
+            Function::LinkageTypes::ExternalLinkage,
+            "alloc_data",
+            &module
+    );
     functions["alloc_global"] = Function::Create(
             FunctionType::get(node_ptr_type, { function_type, int32_type }, false),
             Function::LinkageTypes::ExternalLinkage,
@@ -266,6 +272,11 @@ Value* llvm_context::create_float(Function* f, Value* v) {
     auto alloc_float_f = functions.at("alloc_float");
     auto alloc_float_call = builder.CreateCall(alloc_float_f, { v });
     return create_track(f, alloc_float_call);
+}
+Value* llvm_context::create_data(Function* f, Value* tag, Value* size) {
+    auto alloc_data_f = functions.at("alloc_data");
+    auto alloc_data_call = builder.CreateCall(alloc_data_f, { tag, size });
+    return create_track(f, alloc_data_call);
 }
 
 Value* llvm_context::unwrap_data_tag(Value* v) {

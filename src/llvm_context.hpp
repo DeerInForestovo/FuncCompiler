@@ -64,6 +64,7 @@ struct llvm_context {
     llvm::Value* unwrap_float(llvm::Value*);
     llvm::Value* create_num(llvm::Function*, llvm::Value*);
     llvm::Value* create_float(llvm::Function*, llvm::Value*);
+    llvm::Value* create_data(llvm::Function*, llvm::Value*, llvm::Value*);
 
     llvm::Value* unwrap_data_tag(llvm::Value*);
 
