@@ -274,17 +274,13 @@ void ast_do::compile(const env_ptr& env, std::vector<instruction_ptr>& into) con
         bool is_bind = !action->bind_name.empty();
         bind_num += is_bind;
 
-        if (is_bind) {
-            into.push_back(instruction_ptr(new instruction_alloc(1)));
-            cur_env = env_ptr(new env_var(action->bind_name, std::move(cur_env)));
-        }
         action->expr->compile(cur_env, into);
         into.push_back(instruction_ptr(new instruction_eval()));
         if (is_bind) {
-            into.push_back(instruction_ptr(new instruction_update(0)));
+            cur_env = env_ptr(new env_var(action->bind_name, std::move(cur_env)));
         }
 
-        last_bind = !action->bind_name.empty();
+        last_bind = is_bind;
     }
 
     into.push_back(instruction_ptr(new instruction_slide(bind_num)));
