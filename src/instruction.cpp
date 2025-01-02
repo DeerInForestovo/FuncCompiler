@@ -24,7 +24,16 @@ void instruction_pushfloat::print(int indent, std::ostream& to) const {
 }
 
 void instruction_pushfloat::gen_llvm(llvm_context& ctx, Function* f) const {
-    ctx.create_push(f, ctx.create_float(f, ctx.create_f32(value)));
+    ctx.create_pack(f, ctx.create_size(0), ctx.create_i8(value));
+}
+
+void instruction_pushchar::print(int indent, std::ostream& to) const {
+    print_indent(indent, to);
+    to << "PushChar(" << value << ")" << std::endl;
+}
+
+void instruction_pushchar::gen_llvm(llvm_context& ctx, Function* f) const {
+    ctx.create_push(f, ctx.create_char(f, ctx.create_f32(value)));
 }
 
 void instruction_pushglobal::print(int indent, std::ostream& to) const {

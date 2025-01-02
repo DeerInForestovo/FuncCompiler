@@ -99,6 +99,7 @@ type_ptr ast_char::typecheck(type_mgr& mgr) {
 }
 
 void ast_char::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
+    into.push_back(instruction_ptr(new instruction_pushchar(value)));
 }
 
 void ast_lid::print(int indent, std::ostream& to) const {
