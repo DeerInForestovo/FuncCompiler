@@ -67,6 +67,14 @@ type_ptr ast_list::typecheck(type_mgr& mgr) {
 }
 
 void ast_list::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
+    into.push_back(instruction_ptr(new instruction_pushglobal("Nil")));
+    env_ptr new_env = env_ptr(new env_offset(1, env));
+    for (auto rit = arr.rbegin(); rit != arr.rend(); ++rit) {
+        (*rit)->compile(new_env, into);
+        into.push_back(instruction_ptr(new instruction_pushglobal("Cons")));
+        into.push_back(instruction_ptr(new instruction_mkapp()));
+        into.push_back(instruction_ptr(new instruction_mkapp()));
+    }
 }
 
 void ast_char::print(int indent, std::ostream& to) const {
@@ -242,7 +250,7 @@ void ast_do::find_free(type_mgr &mgr, type_env_ptr &env, std::set<std::string> &
 
 type_ptr ast_do::typecheck(type_mgr &mgr) {
     type_ptr return_type = mgr.new_type();
-    mgr.unify(return_type, env->lookup("IOSimpleCons")->instantiate(mgr));
+    mgr.unify(return_type, env->lookup("_IOSimpleCons")->instantiate(mgr));
     
     type_ptr last_type;
     for (auto& action: actions) {
@@ -275,10 +283,10 @@ void action_exec::print(int indent, std::ostream &to) const {
 
 type_ptr action_exec::typecheck(type_mgr &mgr) {
     type_ptr body_type = expr->typecheck(mgr);
-    mgr.unify(body_type, expr->env->lookup("IOSimpleCons")->instantiate(mgr));
+    mgr.unify(body_type, expr->env->lookup("_IOSimpleCons")->instantiate(mgr));
 
     if (!bind_name.empty()) {
-        type_ptr io_bind_ptr = env->lookup("IOBindCons")->instantiate(mgr);
+        type_ptr io_bind_ptr = env->lookup("_IOBindCons")->instantiate(mgr);
         type_arr* io_bind = dynamic_cast<type_arr*>(io_bind_ptr.get());
         mgr.unify(env->lookup(bind_name)->instantiate(mgr), io_bind->left);
     }
@@ -299,7 +307,7 @@ void action_return::print(int indent, std::ostream &to) const {
 type_ptr action_return::typecheck(type_mgr &mgr) {
     type_ptr body_type = expr->typecheck(mgr);
     type_ptr return_type = mgr.new_type();
-    mgr.unify(type_ptr(new type_arr(body_type, return_type)), env->lookup("IOBindCons")->instantiate(mgr));
+    mgr.unify(type_ptr(new type_arr(body_type, return_type)), env->lookup("_IOBindCons")->instantiate(mgr));
 
     if (!bind_name.empty()) {
         mgr.unify(env->lookup(bind_name)->instantiate(mgr), body_type);
