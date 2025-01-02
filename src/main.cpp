@@ -375,6 +375,8 @@ void gen_llvm(
     gen_llvm_internal_binop(ctx, GEQ);
     gen_llvm_internal_binop(ctx, EQ);
     gen_llvm_internal_binop(ctx, NEQ);
+    gen_llvm_internal_binop(ctx, AND);
+    gen_llvm_internal_binop(ctx, OR);
 
     std::cout << "Generating LLVM: Data." << std::endl;
     for(auto& def_data : defs_data) {

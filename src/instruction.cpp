@@ -151,35 +151,48 @@ void instruction_binop::print(int indent, std::ostream& to) const {
 }
 
 void instruction_binop::gen_llvm(llvm_context& ctx, Function* f) const {
-    auto left_int = ctx.unwrap_num(ctx.create_pop(f));
-    auto right_int = ctx.unwrap_num(ctx.create_pop(f));
-    llvm::Value* result;
-    switch(op) {
-        case PLUS: result = ctx.builder.CreateAdd(left_int, right_int); break;
-        case MINUS: result = ctx.builder.CreateSub(left_int, right_int); break;
-        case TIMES: result = ctx.builder.CreateMul(left_int, right_int); break;
-        case DIVIDE: result = ctx.builder.CreateSDiv(left_int, right_int); break;
-        case BMOD: result = ctx.builder.CreateSRem(left_int, right_int); break;
-        case LMOVE: result = ctx.builder.CreateShl(left_int, right_int); break;
-        case RMOVE: result = ctx.builder.CreateAShr(left_int, right_int); break;
-        case BITAND: result = ctx.builder.CreateAnd(left_int, right_int); break;
-        case BITOR: result = ctx.builder.CreateOr(left_int, right_int); break;
-        case XOR: result = ctx.builder.CreateXor(left_int, right_int); break;
-        case LT: result = ctx.builder.CreateICmpSLT(left_int, right_int); break;
-        case GT: result = ctx.builder.CreateICmpSGT(left_int, right_int); break;
-        case LEQ: result = ctx.builder.CreateICmpSLE(left_int, right_int); break;
-        case GEQ: result = ctx.builder.CreateICmpSGE(left_int, right_int); break;
-        case EQ: result = ctx.builder.CreateICmpEQ(left_int, right_int); break;
-        case NEQ: result = ctx.builder.CreateICmpNE(left_int, right_int); break;
-    }
-
-    if (op == LT || op == GT || op == LEQ || op == GEQ || op == EQ || op == NEQ) {
-        // For (num -> (num -> (Bool*))) operations, we need to simulate a Data constructor here.
-        // See instruction.cpp - void instruction_pack::gen_llvm and definition.cpp - void definition_data::generate_llvm.
-        ctx.create_pack(f, ctx.create_size(0),  // The constructor takes 0 elements in the stack (or, arity = 0).
-                ctx.builder.CreateSelect(result, ctx.create_i8(1), ctx.create_i8(0)));  // The constructor-tag is 1 (True) or 0 (False), depanded on result.
+    if (op == AND || op == OR) {
+        auto left_bool_value = ctx.unwrap_data_tag(ctx.create_pop(f));
+        auto right_bool_value = ctx.unwrap_data_tag(ctx.create_pop(f));
+        llvm::Value* result;
+        if (op == AND) {
+            result = ctx.builder.CreateAnd(left_bool_value, right_bool_value);
+        } else {  // OR
+            result = ctx.builder.CreateOr(left_bool_value, right_bool_value);
+        }
+        ctx.create_pack(f, ctx.create_size(0),  // See comments below
+                    ctx.builder.CreateSelect(ctx.builder.CreateICmpNE(result, ctx.create_i8(0)),  // result i8/i32 -> i1
+                            ctx.create_i8(1), ctx.create_i8(0)));
     } else {
-        ctx.create_push(f, ctx.create_num(f, result));
+        auto left_int = ctx.unwrap_num(ctx.create_pop(f));
+        auto right_int = ctx.unwrap_num(ctx.create_pop(f));
+        llvm::Value* result;
+        switch(op) {
+            case PLUS: result = ctx.builder.CreateAdd(left_int, right_int); break;
+            case MINUS: result = ctx.builder.CreateSub(left_int, right_int); break;
+            case TIMES: result = ctx.builder.CreateMul(left_int, right_int); break;
+            case DIVIDE: result = ctx.builder.CreateSDiv(left_int, right_int); break;
+            case BMOD: result = ctx.builder.CreateSRem(left_int, right_int); break;
+            case LMOVE: result = ctx.builder.CreateShl(left_int, right_int); break;
+            case RMOVE: result = ctx.builder.CreateAShr(left_int, right_int); break;
+            case BITAND: result = ctx.builder.CreateAnd(left_int, right_int); break;
+            case BITOR: result = ctx.builder.CreateOr(left_int, right_int); break;
+            case XOR: result = ctx.builder.CreateXor(left_int, right_int); break;
+            case LT: result = ctx.builder.CreateICmpSLT(left_int, right_int); break;
+            case GT: result = ctx.builder.CreateICmpSGT(left_int, right_int); break;
+            case LEQ: result = ctx.builder.CreateICmpSLE(left_int, right_int); break;
+            case GEQ: result = ctx.builder.CreateICmpSGE(left_int, right_int); break;
+            case EQ: result = ctx.builder.CreateICmpEQ(left_int, right_int); break;
+            case NEQ: result = ctx.builder.CreateICmpNE(left_int, right_int); break;
+        }
+        if (op == LT || op == GT || op == LEQ || op == GEQ || op == EQ || op == NEQ) {
+            // For (num -> (num -> (Bool*))) operations, we need to simulate a Data constructor here.
+            // See instruction.cpp - void instruction_pack::gen_llvm and definition.cpp - void definition_data::generate_llvm.
+            ctx.create_pack(f, ctx.create_size(0),  // The constructor takes 0 elements in the stack (or, arity = 0).
+                    ctx.builder.CreateSelect(result, ctx.create_i8(1), ctx.create_i8(0)));  // The constructor-tag is 1 (True) or 0 (False), depanded on result.
+        } else {
+            ctx.create_push(f, ctx.create_num(f, result));
+        }
     }
 }
 
