@@ -132,15 +132,8 @@ void typecheck_program(
     env->bind(">", num_cmp_type_ptr);
     env->bind("<=", num_cmp_type_ptr);
     env->bind(">=", num_cmp_type_ptr);
-
-    type_ptr any_type = type_ptr(new type_var("Any"));
-    type_ptr any_type_app = type_ptr(new type_app(any_type));
-    type_ptr any_cmp_type = type_ptr(new type_arr(any_type_app, type_ptr(
-            new type_arr(any_type_app, bool_type_app))));
-    type_scheme_ptr any_cmp_type_ptr = type_scheme_ptr(new type_scheme(std::move(any_cmp_type)));
-    any_cmp_type_ptr->forall.emplace_back("Any", false);
-    env->bind("==", any_cmp_type_ptr);
-    env->bind("!=", any_cmp_type_ptr);
+    env->bind("==", num_cmp_type_ptr);
+    env->bind("!=", num_cmp_type_ptr);
 
     // std::cout << "Bind int_op types:" << std::endl;
     type_ptr int_op_type = type_ptr(new type_arr(int_type_app, type_ptr(
