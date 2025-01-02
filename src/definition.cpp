@@ -91,6 +91,7 @@ void definition_data::insert_constructors() const {
         full_scheme->forall.reserve(vars.size());
         std::transform(vars.begin(), vars.end(), std::back_inserter(full_scheme->forall), 
             [](std::string var) { return std::make_pair(var, false); });
+        
         env->bind(constructor->name, full_scheme);
     }
 }
