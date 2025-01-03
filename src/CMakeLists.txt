@@ -38,6 +38,7 @@ add_executable(compiler
     uniop.cpp uniop.hpp
     instruction.cpp instruction.hpp
     graph.cpp graph.hpp
+    prelude.cpp prelude.hpp
     ${BISON_parser_OUTPUTS}
     ${FLEX_scanner_OUTPUTS}
     main.cpp
