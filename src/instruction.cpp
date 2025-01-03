@@ -142,6 +142,40 @@ void instruction_binop::print(int indent, std::ostream& to) const {
 }
 
 void instruction_binop::gen_llvm(llvm_context& ctx, Function* f) const {
+    if (op == CONN) {
+        auto left_list = ctx.create_peek(f, ctx.create_size(0));
+        auto tag_i8 = ctx.unwrap_data_tag(left_list);
+        auto tag_i1 = ctx.builder.CreateICmpNE(tag_i8, ConstantInt::get(ctx.builder.getInt8Ty(), 0));
+
+        auto safety_block = BasicBlock::Create(ctx.ctx, "safety", f);
+        auto cons_block = BasicBlock::Create(ctx.ctx, "consBlock", f);
+        auto nil_block = BasicBlock::Create(ctx.ctx, "nilBlock", f);
+
+        ctx.builder.CreateCondBr(tag_i1, cons_block, nil_block);
+
+        ctx.builder.SetInsertPoint(cons_block);
+        ctx.create_split(f, ctx.create_size(2));
+        ctx.create_disablegc(f);
+        auto n_x = ctx.create_pop(f);
+        auto recur_conn = ctx.create_global(f, f, ctx.create_i32(2));
+        auto n_xs = ctx.create_pop(f);
+        auto n_app_conn_xs = ctx.create_app(f, recur_conn, n_xs);
+        auto right_list_cons = ctx.create_pop(f);
+        auto n_app_conn = ctx.create_app(f, n_app_conn_xs, right_list_cons);
+        auto n_cons = ctx.create_global(f, ctx.custom_functions.at("f_Cons")->function, ctx.create_i32(2));
+        auto n_app_cons = ctx.create_app(f, n_cons, n_x);
+        ctx.create_enablegc(f);
+        ctx.create_push(f, ctx.create_app(f, n_app_cons, n_app_conn)); // gc issue?
+        ctx.builder.CreateBr(safety_block);
+
+        ctx.builder.SetInsertPoint(nil_block);
+        ctx.create_popn(f, ctx.create_size(1));
+        ctx.builder.CreateBr(safety_block);
+
+        ctx.builder.SetInsertPoint(safety_block);
+
+        return;
+    }
     auto left_int = ctx.unwrap_num(ctx.create_pop(f));
     auto right_int = ctx.unwrap_num(ctx.create_pop(f));
     llvm::Value* result;

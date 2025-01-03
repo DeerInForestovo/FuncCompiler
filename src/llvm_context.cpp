@@ -122,6 +122,18 @@ void llvm_context::create_functions() {
             "gmachine_split",
             &module
     );
+    functions["gmachine_enablegc"] = Function::Create(
+            FunctionType::get(node_ptr_type, { gmachine_ptr_type }, false),
+            Function::LinkageTypes::ExternalLinkage,
+            "gmachine_enablegc",
+            &module
+    );
+    functions["gmachine_disablegc"] = Function::Create(
+            FunctionType::get(node_ptr_type, { gmachine_ptr_type }, false),
+            Function::LinkageTypes::ExternalLinkage,
+            "gmachine_disablegc",
+            &module
+    );
     functions["gmachine_track"] = Function::Create(
             FunctionType::get(node_ptr_type, { gmachine_ptr_type, node_ptr_type }, false),
             Function::LinkageTypes::ExternalLinkage,
@@ -209,7 +221,16 @@ void llvm_context::create_alloc(Function* f, Value* n) {
     auto alloc_f = functions.at("gmachine_alloc");
     builder.CreateCall(alloc_f, { f->arg_begin(), n });
 }
-Value* llvm_context::create_track(Function* f, Value* v) {
+void llvm_context::create_enablegc(Function *f) {
+    auto enablegc_f = functions.at("gmachine_enablegc");
+    builder.CreateCall(enablegc_f, { f->arg_begin() });
+}
+void llvm_context::create_disablegc(Function *f) {
+    auto disablegc_f = functions.at("gmachine_disablegc");
+    builder.CreateCall(disablegc_f, { f->arg_begin() });
+}
+Value *llvm_context::create_track(Function *f, Value *v)
+{
     auto track_f = functions.at("gmachine_track");
     return builder.CreateCall(track_f, { f->arg_begin(), v });
 }
