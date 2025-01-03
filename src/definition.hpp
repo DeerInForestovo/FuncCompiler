@@ -42,7 +42,7 @@ struct definition_defn {
     void find_free(type_mgr& mgr, type_env_ptr& env);
     void insert_types(type_mgr& mgr);
     void typecheck(type_mgr& mgr);
-    void compile(type_mgr& mgr);
+    void compile();
     void declare_llvm(llvm_context& ctx);
     void generate_llvm(llvm_context& ctx);
 };

@@ -285,9 +285,9 @@ void typecheck_program(
     }
 }
 
-void compile_program(const std::map<std::string, definition_defn_ptr>& defs_defn, type_mgr& mgr) {
+void compile_program(const std::map<std::string, definition_defn_ptr>& defs_defn) {
     for(auto& def_defn : defs_defn) {
-        def_defn.second->compile(mgr);
+        def_defn.second->compile();
 
         for(auto& instruction : def_defn.second->instructions) {
             instruction->print(0, std::cout);
@@ -403,7 +403,7 @@ void gen_llvm(
 
 int main() {
     yy::parser parser;
-    type_mgr mgr;//, compile_mgr;  // TODO: insert IO types into compile_mgr
+    type_mgr mgr;
     type_env_ptr env(new type_env);
 
     std::cout << "Parsing begin:" << std::endl;
@@ -429,7 +429,7 @@ int main() {
         std::cout << "Type checking finished." << std::endl;
 
         std::cout << "Compilation begin:" << std::endl;
-        compile_program(defs_defn, mgr);
+        compile_program(defs_defn);
         std::cout << "Compilation finished." << std::endl;
 
         std::cout << "LLVM Generation begin:" << std::endl;

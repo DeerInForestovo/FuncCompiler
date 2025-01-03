@@ -15,9 +15,11 @@ struct ast {
     virtual ~ast() = default;
 
     virtual void print(int indent, std::ostream& to) const = 0;
-    virtual void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into) = 0;
+    virtual void find_free(type_mgr& mgr,
+        type_env_ptr& env, std::set<std::string>& into) = 0;
     virtual type_ptr typecheck(type_mgr& mgr) = 0;
-    virtual void compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const = 0;
+    virtual void compile(const env_ptr& env,
+        std::vector<instruction_ptr>& into) const = 0;
 };
 
 using ast_ptr = std::unique_ptr<ast>;
@@ -68,7 +70,7 @@ struct ast_int : public ast {
     void print(int indent, std::ostream& to) const;
     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
     type_ptr typecheck(type_mgr& mgr);
-    void compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const;
+    void compile(const env_ptr& env, std::vector<instruction_ptr>& into) const;
 };
 
 struct ast_float : public ast {
@@ -80,7 +82,7 @@ struct ast_float : public ast {
     void print(int indent, std::ostream& to) const;
     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
     type_ptr typecheck(type_mgr& mgr);
-    void compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const;
+    void compile(const env_ptr& env, std::vector<instruction_ptr>& into) const;
 };
 
 struct ast_char : public ast {
@@ -92,7 +94,7 @@ struct ast_char : public ast {
     void print(int indent, std::ostream& to) const;
     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
     type_ptr typecheck(type_mgr& mgr);
-    void compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const;
+    void compile(const env_ptr& env, std::vector<instruction_ptr>& into) const;
 };
 
 struct ast_list : public ast {
@@ -109,7 +111,7 @@ struct ast_list : public ast {
     void print(int indent, std::ostream& to) const;
     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
     type_ptr typecheck(type_mgr& mgr);
-    void compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const;
+    void compile(const env_ptr& env, std::vector<instruction_ptr>& into) const;
 };
 
 struct ast_lid : public ast {
@@ -121,7 +123,7 @@ struct ast_lid : public ast {
     void print(int indent, std::ostream& to) const;
     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
     type_ptr typecheck(type_mgr& mgr);
-    void compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const;
+    void compile(const env_ptr& env, std::vector<instruction_ptr>& into) const;
 };
 
 struct ast_uid : public ast {
@@ -133,7 +135,7 @@ struct ast_uid : public ast {
     void print(int indent, std::ostream& to) const;
     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
     type_ptr typecheck(type_mgr& mgr);
-    void compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const;
+    void compile(const env_ptr& env, std::vector<instruction_ptr>& into) const;
 };
 
 struct ast_binop : public ast {
@@ -147,7 +149,7 @@ struct ast_binop : public ast {
     void print(int indent, std::ostream& to) const;
     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
     type_ptr typecheck(type_mgr& mgr);
-    void compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const;
+    void compile(const env_ptr& env, std::vector<instruction_ptr>& into) const;
 };
 
 struct ast_uniop : public ast {
@@ -160,7 +162,7 @@ struct ast_uniop : public ast {
     void print(int indent, std::ostream& to) const;
     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
     type_ptr typecheck(type_mgr& mgr);
-    void compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const;
+    void compile(const env_ptr& env, std::vector<instruction_ptr>& into) const;
 };
 
 struct ast_app : public ast {
@@ -173,7 +175,7 @@ struct ast_app : public ast {
     void print(int indent, std::ostream& to) const;
     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
     type_ptr typecheck(type_mgr& mgr);
-    void compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const;
+    void compile(const env_ptr& env, std::vector<instruction_ptr>& into) const;
 };
 
 struct ast_do : public ast {
@@ -184,7 +186,7 @@ struct ast_do : public ast {
     void print(int indent, std::ostream& to) const;
     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
     type_ptr typecheck(type_mgr& mgr);
-    void compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const;
+    void compile(const env_ptr& env, std::vector<instruction_ptr>& into) const;
 };
 
 struct action_exec : public action {
@@ -212,7 +214,7 @@ struct ast_case : public ast {
     void print(int indent, std::ostream& to) const;
     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
     type_ptr typecheck(type_mgr& mgr);
-    void compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const;
+    void compile(const env_ptr& env, std::vector<instruction_ptr>& into) const;
 };
 
 struct pattern_var : public pattern {

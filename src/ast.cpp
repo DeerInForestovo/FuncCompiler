@@ -5,16 +5,6 @@
 #include "error.hpp"
 #include "type_env.hpp"
 
-static inline bool is_float_app(type_ptr t, type_mgr& mgr) {
-    type_var *var;
-    type_app* typa = dynamic_cast<type_app*>((mgr.resolve(t, var)).get());
-    if (!typa) return (std::cout << "not app" << std::endl), false;
-    type_base* typc = dynamic_cast<type_base*>((mgr.resolve(typa->constructor, var)).get());
-    if (!typc) return (std::cout << "not app of base" << std::endl), false;
-    if (typc->name != "Float") std::cout << "name = " << typc->name << std::endl;
-    return typc->name == "Float";
-}
-
 static void print_indent(int n, std::ostream& to) {
     while(n--) to << "  ";
 }
@@ -30,13 +20,10 @@ void ast_int::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>&
 
 type_ptr ast_int::typecheck(type_mgr& mgr) {
     // return type_ptr(new type_app(env->lookup_type("Int")));  // Do NOT use this
-    auto return_type = type_ptr(new type_app(mgr.new_num_type()));  // An Int instance is num-taged-var type
-    
-    is_float_app_type = is_float_app(return_type, mgr);
-    return return_type;
+    return type_ptr(new type_app(mgr.new_num_type()));  // An Int instance is num-taged-var type
 }
 
-void ast_int::compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const {
+void ast_int::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
     into.push_back(instruction_ptr(new instruction_pushint(value)));
 }
 
@@ -50,13 +37,10 @@ void ast_float::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string
 }
 
 type_ptr ast_float::typecheck(type_mgr& mgr) {
-    auto return_type = type_ptr(new type_app(env->lookup_type("Float")));
-
-    is_float_app_type = is_float_app(return_type, mgr);
-    return return_type;
+    return type_ptr(new type_app(env->lookup_type("Float")));
 }
 
-void ast_float::compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const {
+void ast_float::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
     into.push_back(instruction_ptr(new instruction_pushfloat(value)));
 }
 
@@ -78,17 +62,15 @@ type_ptr ast_list::typecheck(type_mgr& mgr) {
     type_ptr list_type = env->lookup_type("List");
     type_app* list_app = new type_app(list_type);
     list_app->arguments.emplace_back(arg_type);
-    auto return_type = type_ptr(list_app);
-
-    is_float_app_type = is_float_app(return_type, mgr);
-    return return_type;
+    type_ptr list_app_type = type_ptr(list_app);
+    return list_app_type;
 }
 
-void ast_list::compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const {
+void ast_list::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
     into.push_back(instruction_ptr(new instruction_pushglobal("Nil")));
     env_ptr new_env = env_ptr(new env_offset(1, env));
     for (auto rit = arr.rbegin(); rit != arr.rend(); ++rit) {
-        (*rit)->compile(new_env, into, mgr);
+        (*rit)->compile(new_env, into);
         into.push_back(instruction_ptr(new instruction_pushglobal("Cons")));
         into.push_back(instruction_ptr(new instruction_mkapp()));
         into.push_back(instruction_ptr(new instruction_mkapp()));
@@ -113,13 +95,10 @@ void ast_char::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>
 }
 
 type_ptr ast_char::typecheck(type_mgr& mgr) {
-    auto return_type = type_ptr(new type_app(env->lookup_type("Char")));
-    
-    is_float_app_type = is_float_app(return_type, mgr);
-    return return_type;
+    return type_ptr(new type_app(env->lookup_type("Char")));
 }
 
-void ast_char::compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const {
+void ast_char::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
     into.push_back(instruction_ptr(new instruction_pushchar(value)));
 }
 
@@ -134,13 +113,10 @@ void ast_lid::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>&
 }
 
 type_ptr ast_lid::typecheck(type_mgr& mgr) {
-    auto return_type = env->lookup(id)->instantiate(mgr);
-    
-    is_float_app_type = is_float_app(return_type, mgr);
-    return return_type;
+    return env->lookup(id)->instantiate(mgr);
 }
 
-void ast_lid::compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const {
+void ast_lid::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
     into.push_back(instruction_ptr(
         env->has_variable(id) ?
             (instruction*) new instruction_push(env->get_offset(id)) :
@@ -157,13 +133,10 @@ void ast_uid::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>&
 }
 
 type_ptr ast_uid::typecheck(type_mgr& mgr) {
-    auto return_type = env->lookup(id)->instantiate(mgr);
-    
-    is_float_app_type = is_float_app(return_type, mgr);
-    return return_type;
+    return env->lookup(id)->instantiate(mgr);
 }
 
-void ast_uid::compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const {
+void ast_uid::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
     into.push_back(instruction_ptr(new instruction_pushglobal(id)));
 }
 
@@ -191,24 +164,14 @@ type_ptr ast_binop::typecheck(type_mgr& mgr) {
     type_ptr arrow_two = type_ptr(new type_arr(ltype, arrow_one));
 
     mgr.unify(arrow_two, ftype);
-    
-    is_float_app_type = is_float_app(return_type, mgr);
     return return_type;
 }
 
-void ast_binop::compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const {
-    bool left_is_float = left->is_float_app_type;
-    bool right_is_float = right->is_float_app_type;
+void ast_binop::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
+    right->compile(env, into);
+    left->compile(env_ptr(new env_offset(1, env)), into);
 
-    std::cout << "Binop is_float -> " << left_is_float << right_is_float << "\n";
-
-    right->compile(env, into, mgr);
-    if (left_is_float && !right_is_float) into.push_back(instruction_ptr(new instruction_itof()));
-    left->compile(env_ptr(new env_offset(1, env)), into, mgr);
-    if (!left_is_float && right_is_float) into.push_back(instruction_ptr(new instruction_itof()));
-
-    into.push_back(instruction_ptr(new instruction_pushglobal(
-            binop_action((left_is_float || right_is_float) ? to_float(op) : op))));
+    into.push_back(instruction_ptr(new instruction_pushglobal(binop_action(op))));
     into.push_back(instruction_ptr(new instruction_mkapp()));
     into.push_back(instruction_ptr(new instruction_mkapp()));
 }
@@ -231,12 +194,10 @@ type_ptr ast_uniop::typecheck(type_mgr& mgr) {
     type_ptr return_type = mgr.new_type();
     type_ptr arrow_type = type_ptr(new type_arr(otype, return_type));
     mgr.unify(arrow_type, ftype);
-    
-    is_float_app_type = is_float_app(return_type, mgr);
     return return_type;
 }
 
-void ast_uniop::compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const {
+void ast_uniop::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
 }
 
 void ast_app::print(int indent, std::ostream& to) const {
@@ -259,14 +220,12 @@ type_ptr ast_app::typecheck(type_mgr& mgr) {
     type_ptr return_type = mgr.new_type();
     type_ptr arrow = type_ptr(new type_arr(rtype, return_type));
     mgr.unify(arrow, ltype);
-    
-    is_float_app_type = is_float_app(return_type, mgr);
     return return_type;
 }
 
-void ast_app::compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const {
-    right->compile(env, into, mgr);
-    left->compile(env_ptr(new env_offset(1, env)), into, mgr);
+void ast_app::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
+    right->compile(env, into);
+    left->compile(env_ptr(new env_offset(1, env)), into);
     into.push_back(instruction_ptr(new instruction_mkapp()));
 }
 
@@ -300,12 +259,10 @@ type_ptr ast_do::typecheck(type_mgr &mgr) {
     }
 
     mgr.unify(return_type, last_type);
-    
-    is_float_app_type = is_float_app(return_type, mgr);
     return return_type;
 }
 
-void ast_do::compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const {
+void ast_do::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
 }
 
 void action::insert_binding(type_mgr &mgr, type_env_ptr &env) {
@@ -335,10 +292,7 @@ type_ptr action_exec::typecheck(type_mgr &mgr) {
         mgr.unify(env->lookup(bind_name)->instantiate(mgr), io_bind->left);
     }
 
-    auto return_type = body_type;
-    
-    // is_float_app_type = is_float_app(return_type, mgr);
-    return return_type;
+    return body_type;
 }
 
 void action_return::print(int indent, std::ostream &to) const {
@@ -360,9 +314,6 @@ type_ptr action_return::typecheck(type_mgr &mgr) {
         mgr.unify(env->lookup(bind_name)->instantiate(mgr), body_type);
     }
 
-    // return return_type;
-    
-    // is_float_app_type = is_float_app(return_type, mgr);
     return return_type;
 }
 
@@ -405,17 +356,14 @@ type_ptr ast_case::typecheck(type_mgr& mgr) {
         throw type_error("attempting case analysis of non-data type");
     }
 
-    auto return_type = branch_type;
-    
-    is_float_app_type = is_float_app(return_type, mgr);
-    return return_type;
+    return branch_type;
 }
 
-void ast_case::compile(const env_ptr& env, std::vector<instruction_ptr>& into, type_mgr& mgr) const {
+void ast_case::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
     type_app* app_type = dynamic_cast<type_app*>(input_type.get());
     type_data* type = dynamic_cast<type_data*>(app_type->constructor.get());
 
-    of->compile(env, into, mgr);
+    of->compile(env, into);
     into.push_back(instruction_ptr(new instruction_eval()));
 
     instruction_jump* jump_instruction = new instruction_jump();
@@ -426,7 +374,7 @@ void ast_case::compile(const env_ptr& env, std::vector<instruction_ptr>& into, t
         pattern_constr* cpat;
 
         if((vpat = dynamic_cast<pattern_var*>(branch->pat.get()))) {
-            branch->expr->compile(env_ptr(new env_offset(1, env)), branch_instructions, mgr);
+            branch->expr->compile(env_ptr(new env_offset(1, env)), branch_instructions);
 
             for(auto& constr_pair : type->constructors) {
                 if(jump_instruction->tag_mappings.find(constr_pair.second.tag) !=
@@ -445,7 +393,7 @@ void ast_case::compile(const env_ptr& env, std::vector<instruction_ptr>& into, t
 
             branch_instructions.push_back(instruction_ptr(new instruction_split(
                             cpat->params.size())));
-            branch->expr->compile(new_env, branch_instructions, mgr);
+            branch->expr->compile(new_env, branch_instructions);
             branch_instructions.push_back(instruction_ptr(new instruction_slide(
                             cpat->params.size())));
 
