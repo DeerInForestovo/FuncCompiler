@@ -67,6 +67,7 @@ struct llvm_context {
     llvm::Value* create_data(llvm::Function*, llvm::Value*, llvm::Value*);
 
     llvm::Value* unwrap_data_tag(llvm::Value*);
+    llvm::Value* get_node_tag(llvm::Value*);
 
     llvm::Value* create_global(llvm::Function*, llvm::Value*, llvm::Value*);
 

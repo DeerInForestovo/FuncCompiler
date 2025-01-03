@@ -377,10 +377,6 @@ void gen_llvm(
     gen_llvm_internal_binop(ctx, NEQ);
     gen_llvm_internal_binop(ctx, AND);
     gen_llvm_internal_binop(ctx, OR);
-    gen_llvm_internal_binop(ctx, FPLUS);
-    gen_llvm_internal_binop(ctx, FMINUS);
-    gen_llvm_internal_binop(ctx, FTIMES);
-    gen_llvm_internal_binop(ctx, FDIVIDE);
 
     std::cout << "Generating LLVM: Data." << std::endl;
     for(auto& def_data : defs_data) {
@@ -397,7 +393,7 @@ void gen_llvm(
         def_defn.second->generate_llvm(ctx);
     }
 
-    // ctx.module.print(llvm::outs(), nullptr);
+    ctx.module.print(llvm::outs(), nullptr);
     output_llvm(ctx, "program.o");
 }
 

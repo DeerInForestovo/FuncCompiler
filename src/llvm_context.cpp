@@ -288,6 +288,13 @@ Value* llvm_context::unwrap_data_tag(Value* v) {
     return builder.CreateLoad(tag_ptr);
 }
 
+Value* llvm_context::get_node_tag(Value* node_ptr) {
+    auto offset_0 = create_i32(0);
+    auto offset_tag = create_i32(0);
+    auto tag_ptr = builder.CreateGEP(node_ptr, { offset_0, offset_tag });
+    return builder.CreateLoad(tag_ptr);
+}
+
 Value* llvm_context::create_global(Function* f, Value* gf, Value* a) {
     auto alloc_global_f = functions.at("alloc_global");
     auto alloc_global_call = builder.CreateCall(alloc_global_f, { gf, a });

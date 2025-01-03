@@ -49,20 +49,6 @@ std::string binop_action(binop op) {
         case NEQ: return "neq";
         case INDEX: return "index";
         case CONN: return "concat";
-        case FPLUS: return "float_plus";
-        case FMINUS: return "float_minus";
-        case FTIMES: return "float_times";
-        case FDIVIDE: return "float_divide";
     }
     return "??";
-}
-
-binop to_float(binop op) {
-    switch(op) {
-        case PLUS: return FPLUS;
-        case MINUS: return FMINUS;
-        case TIMES: return FTIMES;
-        case DIVIDE: return FDIVIDE;
-    }
-    throw type_error("[UNREACHABLE] Invalid operations between Float operands.");  // Unreachable
 }

@@ -172,26 +172,54 @@ void instruction_binop::gen_llvm(llvm_context& ctx, Function* f) const {
         ctx.create_pack(f, ctx.create_size(0),  // See comments below
                     ctx.builder.CreateSelect(ctx.builder.CreateICmpNE(result, ctx.create_i8(0)),  // result i8/i32 -> i1
                             ctx.create_i8(1), ctx.create_i8(0)));
-    } else if (op == FPLUS || op == FMINUS || op == FTIMES || op == FDIVIDE) {
-        auto left_float = ctx.unwrap_float(ctx.create_pop(f));
-        auto right_float = ctx.unwrap_float(ctx.create_pop(f));
-        llvm::Value* result;
-        switch(op) {
-            case FPLUS: result = ctx.builder.CreateFAdd(left_float, right_float); break;
-            case FMINUS: result = ctx.builder.CreateFSub(left_float, right_float); break;
-            case FTIMES: result = ctx.builder.CreateFMul(left_float, right_float); break;
-            case FDIVIDE: result = ctx.builder.CreateFDiv(left_float, right_float); break;
+    } else if (op == PLUS || op == MINUS || op == TIMES || op == DIVIDE) {
+        auto left_value = ctx.create_pop(f);
+        auto right_value = ctx.create_pop(f);
+        auto left_tag = ctx.get_node_tag(left_value);
+        auto right_tag = ctx.get_node_tag(right_value);
+
+        auto is_left_float = ctx.builder.CreateICmpEQ(left_tag, ctx.create_i32(2));  // (enum) Tag == 2 -> float
+        auto is_right_float = ctx.builder.CreateICmpEQ(right_tag, ctx.create_i32(2));
+        auto is_any_float = ctx.builder.CreateOr(is_left_float, is_right_float);
+
+        auto left_num = ctx.unwrap_num(left_value);
+        auto right_num = ctx.unwrap_num(right_value);
+        auto left_float = ctx.unwrap_float(left_value);
+        auto right_float = ctx.unwrap_float(right_value);
+
+        auto left_as_float = ctx.builder.CreateSelect(is_left_float,
+                left_float, ctx.builder.CreateSIToFP(left_num, llvm::Type::getFloatTy(ctx.ctx)));
+        auto right_as_float = ctx.builder.CreateSelect(is_right_float,
+                right_float, ctx.builder.CreateSIToFP(right_num, llvm::Type::getFloatTy(ctx.ctx)));
+
+        llvm::Value* num_result;
+        llvm::Value* float_result;
+        switch (op) {
+            case PLUS:
+                float_result = ctx.builder.CreateFAdd(left_as_float, right_as_float);
+                num_result = ctx.builder.CreateAdd(left_num, right_num);
+                break;
+            case MINUS:
+                float_result = ctx.builder.CreateFSub(left_as_float, right_as_float);
+                num_result = ctx.builder.CreateSub(left_num, right_num);
+                break;
+            case TIMES:
+                float_result = ctx.builder.CreateFMul(left_as_float, right_as_float);
+                num_result = ctx.builder.CreateMul(left_num, right_num);
+                break;
+            case DIVIDE:
+                float_result = ctx.builder.CreateFDiv(left_as_float, right_as_float);
+                num_result = ctx.builder.CreateSDiv(left_num, right_num);
+                break;
         }
-        ctx.create_push(f, ctx.create_float(f, result));
+
+        ctx.create_push(f, ctx.builder.CreateSelect(is_any_float,
+                ctx.create_float(f, float_result), ctx.create_num(f, num_result)));
     } else {
         auto left_int = ctx.unwrap_num(ctx.create_pop(f));
         auto right_int = ctx.unwrap_num(ctx.create_pop(f));
         llvm::Value* result;
         switch(op) {
-            case PLUS: result = ctx.builder.CreateAdd(left_int, right_int); break;
-            case MINUS: result = ctx.builder.CreateSub(left_int, right_int); break;
-            case TIMES: result = ctx.builder.CreateMul(left_int, right_int); break;
-            case DIVIDE: result = ctx.builder.CreateSDiv(left_int, right_int); break;
             case BMOD: result = ctx.builder.CreateSRem(left_int, right_int); break;
             case LMOVE: result = ctx.builder.CreateShl(left_int, right_int); break;
             case RMOVE: result = ctx.builder.CreateAShr(left_int, right_int); break;
@@ -241,16 +269,4 @@ void instruction_unwind::print(int indent, std::ostream& to) const {
 
 void instruction_unwind::gen_llvm(llvm_context& ctx, Function* f) const {
     // Nothing
-}
-
-void instruction_itof::print(int indent, std::ostream& to) const {
-    print_indent(indent, to);
-    to << "ItoF()" << std::endl;
-}
-
-void instruction_itof::gen_llvm(llvm_context& ctx, Function* f) const {
-    auto int_value = ctx.unwrap_num(ctx.create_pop(f));
-    auto itof_result = ctx.builder.CreateSIToFP(int_value, Type::getFloatTy(ctx.ctx));
-    auto float_value = ctx.create_float(f, itof_result);
-    ctx.create_push(f, float_value);
 }
