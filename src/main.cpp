@@ -320,6 +320,21 @@ void gen_llvm_internal_binop(llvm_context& ctx, binop op) {
     ctx.builder.CreateRetVoid();
 }
 
+void gen_llvm_internal_uniop(llvm_context& ctx, uniop op) {
+    auto new_function = ctx.create_custom_function(uniop_action(op), 1);
+    std::vector<instruction_ptr> instructions;
+    instructions.push_back(instruction_ptr(new instruction_push(0)));
+    instructions.push_back(instruction_ptr(new instruction_eval()));
+    instructions.push_back(instruction_ptr(new instruction_uniop(op)));
+    instructions.push_back(instruction_ptr(new instruction_update(1)));
+    instructions.push_back(instruction_ptr(new instruction_pop(1)));
+    ctx.builder.SetInsertPoint(&new_function->getEntryBlock());
+    for(auto& instruction : instructions) {
+        instruction->gen_llvm(ctx, new_function);
+    }
+    ctx.builder.CreateRetVoid();
+}
+
 void output_llvm(llvm_context& ctx, const std::string& filename) {
     std::string targetTriple = llvm::sys::getDefaultTargetTriple();
 
@@ -384,6 +399,11 @@ void gen_llvm(
     gen_llvm_internal_binop(ctx, NEQ);
     gen_llvm_internal_binop(ctx, AND);
     gen_llvm_internal_binop(ctx, OR);
+    
+    std::cout << "Generating LLVM: internal uniops." << std::endl;
+    gen_llvm_internal_uniop(ctx, NEGATE);
+    gen_llvm_internal_uniop(ctx, NOT);
+    gen_llvm_internal_uniop(ctx, BITNOT);
 
     std::cout << "Generating LLVM: Data." << std::endl;
     for(auto& def_data : defs_data) {

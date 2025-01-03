@@ -6,6 +6,7 @@
 #include <map>
 #include <ostream>
 #include "binop.hpp"
+#include "uniop.hpp"
 #include "llvm_context.hpp"
 
 struct instruction {
@@ -135,6 +136,16 @@ struct instruction_binop : public instruction {
     binop op;
 
     instruction_binop(binop o)
+        : op(o) {}
+
+    void print(int indent, std::ostream& to) const;
+    void gen_llvm(llvm_context& ctx, llvm::Function* f) const;
+};
+
+struct instruction_uniop : public instruction {
+    uniop op;
+
+    instruction_uniop(uniop o)
         : op(o) {}
 
     void print(int indent, std::ostream& to) const;

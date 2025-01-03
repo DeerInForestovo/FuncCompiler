@@ -244,6 +244,30 @@ void instruction_binop::gen_llvm(llvm_context& ctx, Function* f) const {
     }
 }
 
+void instruction_uniop::print(int indent, std::ostream& to) const {
+    print_indent(indent, to);
+    to << "UniOp(" << uniop_name(op) << ")" << std::endl;
+}
+
+void instruction_uniop::gen_llvm(llvm_context& ctx, Function* f) const {
+    if (op == NOT) {
+        auto bool_value = ctx.unwrap_data_tag(ctx.create_pop(f));  // i8
+        auto result = ctx.builder.CreateICmpEQ(bool_value, ctx.create_i8(0));  // !a <--> (a == False) for (bool)a
+        ctx.create_pack(f, ctx.create_size(0),
+                ctx.builder.CreateSelect(result, ctx.create_i8(1), ctx.create_i8(0)));
+    } else if (op == BITNOT) {
+        auto int_value = ctx.unwrap_num(ctx.create_pop(f));
+        auto result = ctx.builder.CreateNot(int_value);
+        ctx.create_push(f, ctx.create_num(f, result));
+    } else {  // op == NEGATE
+        auto value = ctx.create_pop(f);
+        ctx.create_push(f, ctx.builder.CreateSelect(
+                ctx.builder.CreateICmpEQ(ctx.get_node_tag(value), ctx.create_i32(2)),  // is_float
+                        ctx.create_float(f, ctx.builder.CreateFNeg(ctx.unwrap_float(value))),
+                        ctx.create_num(f, ctx.builder.CreateNeg(ctx.unwrap_num(value)))));
+    }
+}
+
 void instruction_eval::print(int indent, std::ostream& to) const {
     print_indent(indent, to);
     to << "Eval()" << std::endl;

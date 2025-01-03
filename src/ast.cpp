@@ -190,7 +190,7 @@ void ast_uniop::find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string
 type_ptr ast_uniop::typecheck(type_mgr& mgr) {
     type_ptr otype = opd->typecheck(mgr);
     type_ptr ftype = env->lookup(uniop_name(op))->instantiate(mgr);
-    if(!ftype) throw type_error(std::string("unknown binary operator ") + uniop_name(op));
+    if(!ftype) throw type_error(std::string("unknown unique operator ") + uniop_name(op));
     type_ptr return_type = mgr.new_type();
     type_ptr arrow_type = type_ptr(new type_arr(otype, return_type));
     mgr.unify(arrow_type, ftype);
@@ -198,6 +198,10 @@ type_ptr ast_uniop::typecheck(type_mgr& mgr) {
 }
 
 void ast_uniop::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
+    opd->compile(env, into);
+
+    into.push_back(instruction_ptr(new instruction_pushglobal(uniop_action(op))));
+    into.push_back(instruction_ptr(new instruction_mkapp()));
 }
 
 void ast_app::print(int indent, std::ostream& to) const {
