@@ -35,12 +35,12 @@ void definition_defn::typecheck(type_mgr& mgr) {
     mgr.unify(return_type, body_type);
 }
 
-void definition_defn::compile() {
+void definition_defn::compile(type_mgr& mgr) {
     env_ptr new_env = env_ptr(new env_offset(0, nullptr));
     for(auto it = params.rbegin(); it != params.rend(); it++) {
         new_env = env_ptr(new env_var(*it, new_env));
     }
-    body->compile(new_env, instructions);
+    body->compile(new_env, instructions, mgr);
     instructions.push_back(instruction_ptr(new instruction_update(params.size())));
     instructions.push_back(instruction_ptr(new instruction_pop(params.size())));
 }

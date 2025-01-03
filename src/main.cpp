@@ -285,9 +285,9 @@ void typecheck_program(
     }
 }
 
-void compile_program(const std::map<std::string, definition_defn_ptr>& defs_defn) {
+void compile_program(const std::map<std::string, definition_defn_ptr>& defs_defn, type_mgr& mgr) {
     for(auto& def_defn : defs_defn) {
-        def_defn.second->compile();
+        def_defn.second->compile(mgr);
 
         for(auto& instruction : def_defn.second->instructions) {
             instruction->print(0, std::cout);
@@ -377,6 +377,10 @@ void gen_llvm(
     gen_llvm_internal_binop(ctx, NEQ);
     gen_llvm_internal_binop(ctx, AND);
     gen_llvm_internal_binop(ctx, OR);
+    gen_llvm_internal_binop(ctx, FPLUS);
+    gen_llvm_internal_binop(ctx, FMINUS);
+    gen_llvm_internal_binop(ctx, FTIMES);
+    gen_llvm_internal_binop(ctx, FDIVIDE);
 
     std::cout << "Generating LLVM: Data." << std::endl;
     for(auto& def_data : defs_data) {
@@ -393,13 +397,13 @@ void gen_llvm(
         def_defn.second->generate_llvm(ctx);
     }
 
-    ctx.module.print(llvm::outs(), nullptr);
+    // ctx.module.print(llvm::outs(), nullptr);
     output_llvm(ctx, "program.o");
 }
 
 int main() {
     yy::parser parser;
-    type_mgr mgr;
+    type_mgr mgr, compile_mgr;  // TODO: insert IO types into compile_mgr
     type_env_ptr env(new type_env);
 
     std::cout << "Parsing begin:" << std::endl;
@@ -425,7 +429,7 @@ int main() {
         std::cout << "Type checking finished." << std::endl;
 
         std::cout << "Compilation begin:" << std::endl;
-        compile_program(defs_defn);
+        compile_program(defs_defn, mgr);
         std::cout << "Compilation finished." << std::endl;
 
         std::cout << "LLVM Generation begin:" << std::endl;

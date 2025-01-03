@@ -11,3 +11,4 @@ enum binop {
 
 std::string binop_name(binop op);
 std::string binop_action(binop op);
+binop to_float(binop op);

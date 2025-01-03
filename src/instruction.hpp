@@ -160,3 +160,8 @@ struct instruction_unwind : public instruction {
     void print(int indent, std::ostream& to) const;
     void gen_llvm(llvm_context& ctx, llvm::Function* f) const;
 };
+
+struct instruction_itof : public instruction {
+    void print(int indent, std::ostream& to) const;
+    void gen_llvm(llvm_context& ctx, llvm::Function* f) const;
+};

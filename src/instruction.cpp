@@ -24,7 +24,7 @@ void instruction_pushfloat::print(int indent, std::ostream& to) const {
 }
 
 void instruction_pushfloat::gen_llvm(llvm_context& ctx, Function* f) const {
-    ctx.create_pack(f, ctx.create_size(0), ctx.create_i8(value));
+    ctx.create_push(f, ctx.create_float(f, ctx.create_f32(value)));
 }
 
 void instruction_pushchar::print(int indent, std::ostream& to) const {
@@ -33,7 +33,7 @@ void instruction_pushchar::print(int indent, std::ostream& to) const {
 }
 
 void instruction_pushchar::gen_llvm(llvm_context& ctx, Function* f) const {
-    ctx.create_push(f, ctx.create_char(f, ctx.create_f32(value)));
+    ctx.create_pack(f, ctx.create_size(0), ctx.create_i8(value));
 }
 
 void instruction_pushglobal::print(int indent, std::ostream& to) const {
@@ -172,6 +172,17 @@ void instruction_binop::gen_llvm(llvm_context& ctx, Function* f) const {
         ctx.create_pack(f, ctx.create_size(0),  // See comments below
                     ctx.builder.CreateSelect(ctx.builder.CreateICmpNE(result, ctx.create_i8(0)),  // result i8/i32 -> i1
                             ctx.create_i8(1), ctx.create_i8(0)));
+    } else if (op == FPLUS || op == FMINUS || op == FTIMES || op == FDIVIDE) {
+        auto left_float = ctx.unwrap_float(ctx.create_pop(f));
+        auto right_float = ctx.unwrap_float(ctx.create_pop(f));
+        llvm::Value* result;
+        switch(op) {
+            case FPLUS: result = ctx.builder.CreateFAdd(left_float, right_float); break;
+            case FMINUS: result = ctx.builder.CreateFSub(left_float, right_float); break;
+            case FTIMES: result = ctx.builder.CreateFMul(left_float, right_float); break;
+            case FDIVIDE: result = ctx.builder.CreateFDiv(left_float, right_float); break;
+        }
+        ctx.create_push(f, ctx.create_float(f, result));
     } else {
         auto left_int = ctx.unwrap_num(ctx.create_pop(f));
         auto right_int = ctx.unwrap_num(ctx.create_pop(f));
@@ -230,4 +241,16 @@ void instruction_unwind::print(int indent, std::ostream& to) const {
 
 void instruction_unwind::gen_llvm(llvm_context& ctx, Function* f) const {
     // Nothing
+}
+
+void instruction_itof::print(int indent, std::ostream& to) const {
+    print_indent(indent, to);
+    to << "ItoF()" << std::endl;
+}
+
+void instruction_itof::gen_llvm(llvm_context& ctx, Function* f) const {
+    auto int_value = ctx.unwrap_num(ctx.create_pop(f));
+    auto itof_result = ctx.builder.CreateSIToFP(int_value, Type::getFloatTy(ctx.ctx));
+    auto float_value = ctx.create_float(f, itof_result);
+    ctx.create_push(f, float_value);
 }
