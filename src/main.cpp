@@ -8,6 +8,7 @@
 #include "parser.hpp"
 #include "error.hpp"
 #include "type.hpp"
+#include "prelude.hpp"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/TargetSelect.h"
@@ -50,6 +51,7 @@ void typecheck_program(
     env->bind_type("Float", float_type);
 
     type_ptr char_type = type_ptr(new type_base("Char"));
+    type_ptr char_type_app = type_ptr(new type_app(char_type));
     env->bind_type("Char", char_type);
 
     // data types
@@ -95,10 +97,6 @@ void typecheck_program(
     );
 
     defs_data["List"] = std::move(list_type);
-    type_ptr list_arg_type = type_ptr(new type_var("ListArg"));
-    type_app *list_app = new type_app(type_ptr(env->lookup_type("List")));
-    list_app->arguments.emplace_back(list_arg_type);
-    type_ptr list_type_app = type_ptr(list_app);
 
     // add empty
     definition_data_ptr empty_type = definition_data_ptr(
@@ -134,6 +132,15 @@ void typecheck_program(
         def_data.second->insert_constructors();
     }
     std::cout << "insert_constructors, finished." << std::endl;
+
+    type_ptr list_arg_type = type_ptr(new type_var("ListArg"));
+    type_app *list_app = new type_app(type_ptr(env->lookup_type("List")));
+    list_app->arguments.emplace_back(list_arg_type);
+    type_ptr list_type_app = type_ptr(list_app);
+
+    type_ptr list_bind_app(new type_arr(list_arg_type, list_type_app));
+    type_scheme_ptr list_bind_scheme_ptr(new type_scheme(list_bind_app));
+    list_bind_scheme_ptr->forall.emplace_back("ListArg", false);
 
     /*
         Bind op types
@@ -207,27 +214,27 @@ void typecheck_program(
 
     // std::cout << "Bind base types and op types, finished." << std::endl;
 
-    // add readInt and print
+    // add read and print
+
     std::set<std::string> prelude_func;
 
-    type_ptr read_int_type = mgr.new_type();
-    type_ptr io_bind_read_int_type = io_bind_scheme_ptr->instantiate(mgr);
-    type_arr* io_bind_read_int = dynamic_cast<type_arr*>(io_bind_read_int_type.get());
-    mgr.unify(num_type_app, io_bind_read_int->left);
-    mgr.unify(read_int_type, io_bind_read_int->right);
-    env->bind("readInt", read_int_type);
-    prelude_func.insert("readInt");
+    // read part
+
+    type_ptr string_type = mgr.new_type();
+    mgr.unify(type_ptr(new type_arr(char_type_app, string_type)), list_bind_scheme_ptr->instantiate(mgr));
+
+    type_ptr read_type = mgr.new_type();
+    mgr.unify(type_ptr(new type_arr(string_type, read_type)), io_bind_scheme_ptr->instantiate(mgr));
+    env->bind("read", read_type);
+    prelude_func.insert("read");
+
+    // print part
 
     type_ptr io_empty_type = mgr.new_type();
-    type_ptr io_bind_empty_type = io_bind_scheme_ptr->instantiate(mgr);
-    type_arr* io_bind_empty = dynamic_cast<type_arr*>(io_bind_empty_type.get());
-    mgr.unify(empty_type_app, io_bind_empty->left);
-    mgr.unify(io_empty_type, io_bind_empty->right);
-    type_ptr print_var_type = type_ptr(new type_var("PrintVar"));
-    type_ptr print_type(new type_arr(print_var_type, io_empty_type));
-    type_scheme_ptr print_scheme_ptr(new type_scheme(print_type));
-    print_scheme_ptr->forall.emplace_back("PrintVar", false);
-    env->bind("print", print_scheme_ptr);
+    mgr.unify(type_ptr(new type_arr(empty_type_app, io_empty_type)), io_bind_scheme_ptr->instantiate(mgr));
+
+    type_ptr print_type(new type_arr(string_type, io_empty_type));
+    env->bind("print", print_type);
     prelude_func.insert("print");
 
     // std::cout << "Insert prelude functions, finished." << std::endl;
@@ -384,6 +391,10 @@ void gen_llvm(
     }
 
     std::cout << "Generating LLVM: Declare functions." << std::endl;
+
+    generate_read_llvm(ctx);
+    generate_print_llvm(ctx);
+
     for(auto& def_defn : defs_defn) {
         def_defn.second->declare_llvm(ctx);
     }
