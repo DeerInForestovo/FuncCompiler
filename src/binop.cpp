@@ -1,5 +1,4 @@
 #include "binop.hpp"
-#include "error.hpp"
 
 std::string binop_name(binop op) {
     switch(op) {
