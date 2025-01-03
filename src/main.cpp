@@ -403,7 +403,7 @@ void gen_llvm(
 
 int main() {
     yy::parser parser;
-    type_mgr mgr, compile_mgr;  // TODO: insert IO types into compile_mgr
+    type_mgr mgr;//, compile_mgr;  // TODO: insert IO types into compile_mgr
     type_env_ptr env(new type_env);
 
     std::cout << "Parsing begin:" << std::endl;
