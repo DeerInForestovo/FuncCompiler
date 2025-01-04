@@ -66,8 +66,10 @@ void typecheck_program(
     definition_data_ptr bool_type = definition_data_ptr(new 
             definition_data("Bool", std::vector<std::string>(), std::move(bool_constructors)));
     defs_data["Bool"] = std::move(bool_type);
-    type_ptr bool_type_app = type_ptr(new type_app(
-            type_ptr(new type_data("Bool"))));
+    type_data* bool_type_data = new type_data("Bool");
+    bool_type_data->constructors["False"] = {0};
+    bool_type_data->constructors["True"] = {1};
+    type_ptr bool_type_app = type_ptr(new type_app(type_ptr(bool_type_data)));
 
     if (defs_data.find("List") != defs_data.end())
         throw type_error("User self-defined List type.");
