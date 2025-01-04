@@ -326,8 +326,8 @@ typeList
 
 list
     : OSQUARE CSQUARE { $$ = ast_ptr(new ast_list(std::vector<ast_ptr>())); }
-    | OSQUARE termlist COMMA CSQUARE { $$ = ast_ptr(new ast_list(std::move($2))); }
-    | OSQUARE termlist COMMA error { $$ = ast_ptr(new ast_list(std::move($2))); yyerror("Unmatched '['."); }
+    | OSQUARE termlist CSQUARE { $$ = ast_ptr(new ast_list(std::move($2))); }
+    | OSQUARE termlist error { $$ = ast_ptr(new ast_list(std::move($2))); yyerror("Unmatched '['."); }
     ;
 
 termlist
