@@ -88,8 +88,8 @@ void generate_print_llvm(llvm_context &ctx) {
 
     ctx.builder.SetInsertPoint(nil_block);
 
-    Value *newline_val = ctx.builder.getInt32('\n');
-    ctx.builder.CreateCall(putchar_func, { newline_val });
+    // Value *newline_val = ctx.builder.getInt32('\n');
+    // ctx.builder.CreateCall(putchar_func, { newline_val });
     
     ctx.builder.CreateBr(safety_block);
 
