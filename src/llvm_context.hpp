@@ -53,6 +53,8 @@ struct llvm_context {
     void create_split(llvm::Function*, llvm::Value*);
     void create_slide(llvm::Function*, llvm::Value*);
     void create_alloc(llvm::Function*, llvm::Value*);
+    void create_enablegc(llvm::Function*);
+    void create_disablegc(llvm::Function*);
     llvm::Value* create_track(llvm::Function*, llvm::Value*);
 
     void create_unwind(llvm::Function*);

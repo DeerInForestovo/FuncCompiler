@@ -315,7 +315,9 @@ void gen_llvm_internal_op(llvm_context& ctx, binop op) {
     auto new_function = ctx.create_custom_function(binop_action(op), 2);
     std::vector<instruction_ptr> instructions;
     instructions.push_back(instruction_ptr(new instruction_push(1)));
-    instructions.push_back(instruction_ptr(new instruction_eval()));
+    if (op != CONN) {
+        instructions.push_back(instruction_ptr(new instruction_eval()));
+    }
     instructions.push_back(instruction_ptr(new instruction_push(1)));
     instructions.push_back(instruction_ptr(new instruction_eval()));
     instructions.push_back(instruction_ptr(new instruction_binop(op)));
@@ -380,6 +382,8 @@ void gen_llvm(
     for(auto& def_data : defs_data) {
         def_data.second->generate_llvm(ctx);
     }
+
+    gen_llvm_internal_op(ctx, CONN);
 
     generate_read_llvm(ctx);
     generate_print_llvm(ctx);
