@@ -180,7 +180,7 @@ void instruction_binop::gen_llvm(llvm_context& ctx, Function* f) const {
         auto n_app_conn_xs = ctx.create_app(f, recur_conn, n_xs);
         auto right_list_cons = ctx.create_pop(f);
         auto n_app_conn = ctx.create_app(f, n_app_conn_xs, right_list_cons);
-        auto n_cons = ctx.create_global(f, ctx.custom_functions.at("f_Cons")->function, ctx.create_i32(2));
+        auto n_cons = ctx.create_global(f, ctx.custom_functions.at("f__Cons")->function, ctx.create_i32(2));
         auto n_app_cons = ctx.create_app(f, n_cons, n_x);
         ctx.create_enablegc(f);
         ctx.create_push(f, ctx.create_app(f, n_app_cons, n_app_conn)); // gc issue?

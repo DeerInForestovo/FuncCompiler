@@ -67,11 +67,11 @@ type_ptr ast_list::typecheck(type_mgr& mgr) {
 }
 
 void ast_list::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
-    into.push_back(instruction_ptr(new instruction_pushglobal("Nil")));
+    into.push_back(instruction_ptr(new instruction_pushglobal("_Nil")));
     env_ptr new_env = env_ptr(new env_offset(1, env));
     for (auto rit = arr.rbegin(); rit != arr.rend(); ++rit) {
         (*rit)->compile(new_env, into);
-        into.push_back(instruction_ptr(new instruction_pushglobal("Cons")));
+        into.push_back(instruction_ptr(new instruction_pushglobal("_Cons")));
         into.push_back(instruction_ptr(new instruction_mkapp()));
         into.push_back(instruction_ptr(new instruction_mkapp()));
     }
@@ -94,7 +94,7 @@ void ast_list_colon::compile(const env_ptr& env, std::vector<instruction_ptr>& i
     env_ptr new_env = env_ptr(new env_offset(1, env));
     for (auto rit = arr.rbegin() + 1; rit != arr.rend(); ++rit) {
         (*rit)->compile(new_env, into);
-        into.push_back(instruction_ptr(new instruction_pushglobal("Cons")));
+        into.push_back(instruction_ptr(new instruction_pushglobal("_Cons")));
         into.push_back(instruction_ptr(new instruction_mkapp()));
         into.push_back(instruction_ptr(new instruction_mkapp()));
     }

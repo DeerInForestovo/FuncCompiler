@@ -29,14 +29,14 @@ void generate_read_llvm(llvm_context &ctx) {
     ctx.builder.CreateCondBr(sign, true_block, false_block);
     
     ctx.builder.SetInsertPoint(true_block);
-    ctx.create_push(f, ctx.create_global(f, ctx.custom_functions.at("f_Nil")->function, ctx.create_i32(0)));
+    ctx.create_push(f, ctx.create_global(f, ctx.custom_functions.at("f__Nil")->function, ctx.create_i32(0)));
     ctx.builder.CreateBr(safety_block);
 
     ctx.builder.SetInsertPoint(false_block);
     ctx.create_push(f, ctx.create_global(f, f, ctx.create_i32(0)));
     ctx.create_unwind(f);
     ctx.create_pack(f, ctx.create_size(0), ret_char);
-    Value *n_cons = ctx.create_global(f, ctx.custom_functions.at("f_Cons")->function, ctx.create_i32(2));
+    Value *n_cons = ctx.create_global(f, ctx.custom_functions.at("f__Cons")->function, ctx.create_i32(2));
     Value *n_char = ctx.create_pop(f);
     Value *n_app = ctx.create_app(f, n_cons, n_char);
     Value *n_branch = ctx.create_pop(f);

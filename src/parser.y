@@ -285,9 +285,9 @@ pattern
     : LID { $$ = pattern_ptr(new pattern_var(std::move($1))); }
     | UID lowercaseParams
         { $$ = pattern_ptr(new pattern_constr(std::move($1), std::move($2))); }
-    | OSQUARE CSQUARE { $$ = pattern_ptr(new pattern_constr("Nil", std::vector<std::string>())); }
+    | OSQUARE CSQUARE { $$ = pattern_ptr(new pattern_constr("_Nil", std::vector<std::string>())); }
     | OSQUARE LID COLON LID CSQUARE 
-        { $$ = pattern_ptr(new pattern_constr("Cons", std::vector<std::string> { std::move($2), std::move($4) })); }
+        { $$ = pattern_ptr(new pattern_constr("_Cons", std::vector<std::string> { std::move($2), std::move($4) })); }
     ;
 
 data

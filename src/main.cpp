@@ -74,7 +74,7 @@ void typecheck_program(
     if (defs_data.find("List") != defs_data.end())
         throw type_error("User self-defined List type.");
 
-    constructor_ptr nil_constructor = constructor_ptr(new constructor("Nil", std::vector<parsed_type_ptr>()));
+    constructor_ptr nil_constructor = constructor_ptr(new constructor("_Nil", std::vector<parsed_type_ptr>()));
 
     parsed_type_ptr list_arg_parsed_type = parsed_type_ptr(new parsed_type_var("ListArg"));
     parsed_type_ptr list_arg_cons_parsed_type = parsed_type_ptr(new parsed_type_var("ListArg"));
@@ -86,7 +86,7 @@ void typecheck_program(
     std::vector<parsed_type_ptr> param_cons_constructor;
     param_cons_constructor.push_back(std::move(list_arg_parsed_type));
     param_cons_constructor.push_back(std::move(list_parsed_type));
-    constructor_ptr cons_constructor = constructor_ptr(new constructor("Cons", std::move(param_cons_constructor)));
+    constructor_ptr cons_constructor = constructor_ptr(new constructor("_Cons", std::move(param_cons_constructor)));
 
     std::vector<constructor_ptr> list_constructors;
     list_constructors.push_back(std::move(nil_constructor));
