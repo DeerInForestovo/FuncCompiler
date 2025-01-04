@@ -84,6 +84,7 @@ return { return yy::parser::make_RETURN(); }
 \[ { return yy::parser::make_OSQUARE(); }
 \] { return yy::parser::make_CSQUARE(); }
 ,  { return yy::parser::make_COMMA(); }
+: { return yy::parser::make_COLON(); }
 -> { return yy::parser::make_ARROW(); }
 \<- { return yy::parser::make_BIND(); }
 = { return yy::parser::make_EQUAL(); }

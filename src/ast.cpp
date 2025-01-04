@@ -77,6 +77,29 @@ void ast_list::compile(const env_ptr& env, std::vector<instruction_ptr>& into) c
     }
 }
 
+type_ptr ast_list_colon::typecheck(type_mgr& mgr) {
+    type_ptr arg_type = mgr.new_type();
+    for (auto it = arr.begin(); it != arr.end() - 1; it++)
+        mgr.unify((*it)->typecheck(mgr), arg_type);
+    type_ptr list_type = env->lookup_type("List");
+    type_app* list_app = new type_app(list_type);
+    list_app->arguments.emplace_back(arg_type);
+    type_ptr list_app_type = type_ptr(list_app);
+    mgr.unify(list_app_type, arr.back()->typecheck(mgr));
+    return list_app_type;
+}
+
+void ast_list_colon::compile(const env_ptr& env, std::vector<instruction_ptr>& into) const {
+    arr.back()->compile(env, into);
+    env_ptr new_env = env_ptr(new env_offset(1, env));
+    for (auto rit = arr.rbegin() + 1; rit != arr.rend(); ++rit) {
+        (*rit)->compile(new_env, into);
+        into.push_back(instruction_ptr(new instruction_pushglobal("Cons")));
+        into.push_back(instruction_ptr(new instruction_mkapp()));
+        into.push_back(instruction_ptr(new instruction_mkapp()));
+    }
+}
+
 void ast_char::print(int indent, std::ostream& to) const {
     print_indent(indent, to);
     char unParsedChar = '\0';

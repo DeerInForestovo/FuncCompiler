@@ -110,6 +110,13 @@ struct ast_list : public ast {
 
     void print(int indent, std::ostream& to) const;
     void find_free(type_mgr& mgr, type_env_ptr& env, std::set<std::string>& into);
+    virtual type_ptr typecheck(type_mgr& mgr);
+    virtual void compile(const env_ptr& env, std::vector<instruction_ptr>& into) const;
+};
+
+struct ast_list_colon : public ast_list {
+    using ast_list::ast_list;
+
     type_ptr typecheck(type_mgr& mgr);
     void compile(const env_ptr& env, std::vector<instruction_ptr>& into) const;
 };

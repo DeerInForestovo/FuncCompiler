@@ -50,6 +50,7 @@ void yyerror(const std::string &msg) {
 %token OSQUARE
 %token CSQUARE
 %token COMMA
+%token COLON
 %token ARROW
 %token BIND
 %token EQUAL
@@ -73,7 +74,7 @@ void yyerror(const std::string &msg) {
 %type <branch_ptr> branch branchDo
 %type <pattern_ptr> pattern
 %type <constructor_ptr> constructor
-%type <std::vector<ast_ptr>> termlist
+%type <std::vector<ast_ptr>> commaTermList colonTermList
 
 %start program
 
@@ -326,11 +327,17 @@ typeList
 
 list
     : OSQUARE CSQUARE { $$ = ast_ptr(new ast_list(std::vector<ast_ptr>())); }
-    | OSQUARE termlist CSQUARE { $$ = ast_ptr(new ast_list(std::move($2))); }
-    | OSQUARE termlist error { $$ = ast_ptr(new ast_list(std::move($2))); yyerror("Unmatched '['."); }
+    | OSQUARE commaTermList CSQUARE { $$ = ast_ptr(new ast_list(std::move($2))); }
+    | OSQUARE colonTermList CSQUARE { $$ = ast_ptr(new ast_list_colon(std::move($2))); }
+    | OSQUARE commaTermList error { $$ = ast_ptr(new ast_list(std::move($2))); yyerror("Unmatched '['."); }
     ;
 
-termlist
+commaTermList
     : aOr { $$ = std::vector<ast_ptr>(); $$.push_back(std::move($1)); }
-    | termlist COMMA aOr { $$ = std::move($1); $$.push_back(std::move($3)); }
+    | commaTermList COMMA aOr { $$ = std::move($1); $$.push_back(std::move($3)); }
+    ;
+
+colonTermList
+    : aOr COLON aOr { $$ = std::vector<ast_ptr>(); $$.push_back(std::move($1)); $$.push_back(std::move($3)); }
+    | colonTermList COLON aOr { $$ = std::move($1); $$.push_back(std::move($3)); }
     ;
