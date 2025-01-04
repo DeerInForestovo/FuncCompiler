@@ -1,4 +1,5 @@
 #include "prelude.hpp"
+#include "instruction.hpp"
 
 using namespace llvm;
 
@@ -95,6 +96,48 @@ void generate_print_llvm(llvm_context &ctx) {
     ctx.builder.SetInsertPoint(safety_block);
 
     ctx.create_update(f, ctx.create_size(0));
+
+    ctx.builder.CreateRetVoid();
+}
+
+void generate_charToNum_llvm(llvm_context& ctx) {
+    auto f = ctx.create_custom_function("charToNum", 1);
+    ctx.builder.SetInsertPoint(&f->getEntryBlock());
+
+    (new instruction_push(0))->gen_llvm(ctx, f);
+    (new instruction_eval())->gen_llvm(ctx, f);
+    ctx.create_push(f, ctx.create_num(f, ctx.builder.CreateZExt(  // i8 -> i32
+            ctx.unwrap_data_tag(ctx.create_pop(f)), llvm::Type::getInt32Ty(ctx.ctx))));
+    (new instruction_update(1))->gen_llvm(ctx, f);
+    (new instruction_pop(1))->gen_llvm(ctx, f);
+
+    ctx.builder.CreateRetVoid();
+}
+
+void generate_numToChar_llvm(llvm_context& ctx) {
+    auto f = ctx.create_custom_function("numToChar", 1);
+    ctx.builder.SetInsertPoint(&f->getEntryBlock());
+
+    (new instruction_push(0))->gen_llvm(ctx, f);
+    (new instruction_eval())->gen_llvm(ctx, f);
+    ctx.create_pack(f, ctx.create_size(0), ctx.builder.CreateTrunc(  // i32 -> i8
+            ctx.unwrap_num(ctx.create_pop(f)), llvm::Type::getInt8Ty(ctx.ctx)));
+    (new instruction_update(1))->gen_llvm(ctx, f);
+    (new instruction_pop(1))->gen_llvm(ctx, f);
+
+    ctx.builder.CreateRetVoid();
+}
+
+void generate_floatToNum_llvm(llvm_context& ctx) {
+    auto f = ctx.create_custom_function("floatToNum", 1);
+    ctx.builder.SetInsertPoint(&f->getEntryBlock());
+
+    (new instruction_push(0))->gen_llvm(ctx, f);
+    (new instruction_eval())->gen_llvm(ctx, f);
+    ctx.create_push(f, ctx.create_num(f, ctx.builder.CreateFPToSI(
+            ctx.unwrap_float(ctx.create_pop(f)), llvm::Type::getInt32Ty(ctx.ctx))));
+    (new instruction_update(1))->gen_llvm(ctx, f);
+    (new instruction_pop(1))->gen_llvm(ctx, f);
 
     ctx.builder.CreateRetVoid();
 }

@@ -48,6 +48,7 @@ void typecheck_program(
     env->bind_type("Int", int_type);
 
     type_ptr float_type = type_ptr(new type_base("Float"));
+    type_ptr float_type_app = type_ptr(new type_app(float_type));
     env->bind_type("Float", float_type);
 
     type_ptr char_type = type_ptr(new type_base("Char"));
@@ -237,6 +238,30 @@ void typecheck_program(
     env->bind("print", print_type);
     prelude_func.insert("print");
 
+    // charToNum part
+    
+    type_ptr charToNum_type = type_ptr(new type_arr(char_type_app, num_type_app));
+    type_scheme_ptr charToNum_type_ptr = type_scheme_ptr(new type_scheme(std::move(charToNum_type)));
+    charToNum_type_ptr->forall.emplace_back("Num", true);
+    env->bind("charToNum", charToNum_type_ptr);
+    prelude_func.insert("charToNum");
+
+    // numToChar part
+    
+    type_ptr numToChar_type = type_ptr(new type_arr(num_type_app, char_type_app));
+    type_scheme_ptr numToChar_type_ptr = type_scheme_ptr(new type_scheme(std::move(numToChar_type)));
+    numToChar_type_ptr->forall.emplace_back("Num", true);
+    env->bind("numToChar", numToChar_type_ptr);
+    prelude_func.insert("numToChar");
+
+    // floatToNum part
+    
+    type_ptr floatToNum_type = type_ptr(new type_arr(float_type_app, num_type_app));
+    type_scheme_ptr floatToNum_type_ptr = type_scheme_ptr(new type_scheme(std::move(floatToNum_type)));
+    floatToNum_type_ptr->forall.emplace_back("Num", true);
+    env->bind("floatToNum", floatToNum_type_ptr);
+    prelude_func.insert("floatToNum");
+
     // std::cout << "Insert prelude functions, finished." << std::endl;
 
     function_graph dependency_graph;
@@ -414,6 +439,10 @@ void gen_llvm(
 
     generate_read_llvm(ctx);
     generate_print_llvm(ctx);
+
+    generate_charToNum_llvm(ctx);
+    generate_numToChar_llvm(ctx);
+    generate_floatToNum_llvm(ctx);
 
     for(auto& def_defn : defs_defn) {
         def_defn.second->declare_llvm(ctx);

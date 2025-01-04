@@ -248,7 +248,8 @@ void print_node(struct node_base* n) {
         putchar(' ');
         print_node(app->right);
     } else if(n->tag == NODE_DATA) {
-        printf("(Packed)");
+        struct node_data* data = (struct node_data*) n;
+        printf("(Packed: tag = %d)", data->tag);
     } else if(n->tag == NODE_GLOBAL) {
         struct node_global* global = (struct node_global*) n;
         printf("(Global: %p)", global->function);
