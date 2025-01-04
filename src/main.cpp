@@ -449,7 +449,7 @@ void gen_llvm(
 
     std::cout << "Generating LLVM: Declare functions." << std::endl;
 
-    gen_llvm_internal_op(ctx, CONN);
+    gen_llvm_internal_binop(ctx, CONN);
 
     generate_read_llvm(ctx);
     generate_print_llvm(ctx);
