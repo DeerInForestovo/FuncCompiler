@@ -116,6 +116,7 @@ void gmachine_init(struct gmachine* g) {
     g->gc_nodes = NULL;
     g->gc_node_count = 0;
     g->gc_node_threshold = 128;
+    g->gc_enabled = 1;
 }
 
 void gmachine_free(struct gmachine* g) {
@@ -176,12 +177,20 @@ void gmachine_split(struct gmachine* g, size_t n) {
     }
 }
 
+void gmachine_enablegc(struct gmachine* g) {
+    g->gc_enabled = 1;
+}
+
+void gmachine_disablegc(struct gmachine* g) {
+    g->gc_enabled = 0;
+}
+
 struct node_base* gmachine_track(struct gmachine* g, struct node_base* b) {
     g->gc_node_count++;
     b->gc_next = g->gc_nodes;
     g->gc_nodes = b;
 
-    if(g->gc_node_count >= g->gc_node_threshold) {
+    if(g->gc_node_count >= g->gc_node_threshold && g->gc_enabled) {
         uint64_t nodes_before = g->gc_node_count;
         gc_visit_node(b);
         gmachine_gc(g);

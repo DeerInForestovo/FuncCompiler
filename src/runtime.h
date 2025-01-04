@@ -78,6 +78,7 @@ struct gmachine {
     struct node_base* gc_nodes;
     int64_t gc_node_count;
     int64_t gc_node_threshold;
+    int8_t gc_enabled;
 };
 
 void gmachine_init(struct gmachine* g);
@@ -87,5 +88,7 @@ void gmachine_update(struct gmachine* g, size_t o);
 void gmachine_alloc(struct gmachine* g, size_t o);
 void gmachine_pack(struct gmachine* g, size_t n, int8_t t);
 void gmachine_split(struct gmachine* g, size_t n);
+void gmachine_enablegc(struct gmachine* g);
+void gmachine_disablegc(struct gmachine* g);
 struct node_base* gmachine_track(struct gmachine* g, struct node_base* b);
 void gmachine_gc(struct gmachine* g);
