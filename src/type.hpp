@@ -98,3 +98,5 @@ struct type_mgr {
                    std::set<std::pair<std::string, bool>>& into,
                    std::vector<type_ptr> &ancestors) const;
 };
+
+using type_mgr_ptr = std::shared_ptr<type_mgr>;

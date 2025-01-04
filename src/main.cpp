@@ -48,6 +48,7 @@ void typecheck_program(
     env->bind_type("Int", int_type);
 
     type_ptr float_type = type_ptr(new type_base("Float"));
+    type_ptr float_type_app = type_ptr(new type_app(float_type));
     env->bind_type("Float", float_type);
 
     type_ptr char_type = type_ptr(new type_base("Char"));
@@ -57,17 +58,18 @@ void typecheck_program(
     // data types
     if (defs_data.find("Bool") != defs_data.end())
         throw type_error("User self-defined Bool type.");
-    constructor_ptr true_constructor = constructor_ptr(new constructor("True", std::vector<parsed_type_ptr>()));
     constructor_ptr false_constructor = constructor_ptr(new constructor("False", std::vector<parsed_type_ptr>()));
+    constructor_ptr true_constructor = constructor_ptr(new constructor("True", std::vector<parsed_type_ptr>()));
     std::vector<constructor_ptr> bool_constructors;
-    bool_constructors.push_back(std::move(true_constructor));
     bool_constructors.push_back(std::move(false_constructor));
+    bool_constructors.push_back(std::move(true_constructor));
     definition_data_ptr bool_type = definition_data_ptr(new 
             definition_data("Bool", std::vector<std::string>(), std::move(bool_constructors)));
-    bool_type->insert_types(env);
-    bool_type->insert_constructors();
-    type_ptr bool_type_app = type_ptr(new type_app(
-            type_ptr(new type_data("Bool"))));
+    defs_data["Bool"] = std::move(bool_type);
+    type_data* bool_type_data = new type_data("Bool");
+    bool_type_data->constructors["False"] = {0};
+    bool_type_data->constructors["True"] = {1};
+    type_ptr bool_type_app = type_ptr(new type_app(type_ptr(bool_type_data)));
 
     if (defs_data.find("List") != defs_data.end())
         throw type_error("User self-defined List type.");
@@ -164,15 +166,8 @@ void typecheck_program(
     env->bind(">", num_cmp_type_ptr);
     env->bind("<=", num_cmp_type_ptr);
     env->bind(">=", num_cmp_type_ptr);
-
-    type_ptr any_type = type_ptr(new type_var("Any"));
-    type_ptr any_type_app = type_ptr(new type_app(any_type));
-    type_ptr any_cmp_type = type_ptr(new type_arr(any_type_app, type_ptr(
-            new type_arr(any_type_app, bool_type_app))));
-    type_scheme_ptr any_cmp_type_ptr = type_scheme_ptr(new type_scheme(std::move(any_cmp_type)));
-    any_cmp_type_ptr->forall.emplace_back("Any", false);
-    env->bind("==", any_cmp_type_ptr);
-    env->bind("!=", any_cmp_type_ptr);
+    env->bind("==", num_cmp_type_ptr);
+    env->bind("!=", num_cmp_type_ptr);
 
     // std::cout << "Bind int_op types:" << std::endl;
     type_ptr int_op_type = type_ptr(new type_arr(int_type_app, type_ptr(
@@ -245,6 +240,38 @@ void typecheck_program(
     env->bind("print", print_type);
     prelude_func.insert("print");
 
+    // charToNum part
+    
+    type_ptr charToNum_type = type_ptr(new type_arr(char_type_app, num_type_app));
+    type_scheme_ptr charToNum_type_ptr = type_scheme_ptr(new type_scheme(std::move(charToNum_type)));
+    charToNum_type_ptr->forall.emplace_back("Num", true);
+    env->bind("charToNum", charToNum_type_ptr);
+    prelude_func.insert("charToNum");
+
+    // numToChar part
+    
+    type_ptr numToChar_type = type_ptr(new type_arr(num_type_app, char_type_app));
+    type_scheme_ptr numToChar_type_ptr = type_scheme_ptr(new type_scheme(std::move(numToChar_type)));
+    numToChar_type_ptr->forall.emplace_back("Num", true);
+    env->bind("numToChar", numToChar_type_ptr);
+    prelude_func.insert("numToChar");
+
+    // floatToNum part
+    
+    type_ptr floatToNum_type = type_ptr(new type_arr(float_type_app, num_type_app));
+    type_scheme_ptr floatToNum_type_ptr = type_scheme_ptr(new type_scheme(std::move(floatToNum_type)));
+    floatToNum_type_ptr->forall.emplace_back("Num", true);
+    env->bind("floatToNum", floatToNum_type_ptr);
+    prelude_func.insert("floatToNum");
+
+    // intToFloat part
+    
+    type_ptr intToFloat_type = type_ptr(new type_arr(int_type_app, float_type_app));
+    type_scheme_ptr intToFloat_type_ptr = type_scheme_ptr(new type_scheme(std::move(intToFloat_type)));
+    intToFloat_type_ptr->forall.emplace_back("Num", true);
+    env->bind("intToFloat", intToFloat_type_ptr);
+    prelude_func.insert("intToFloat");
+
     // std::cout << "Insert prelude functions, finished." << std::endl;
 
     function_graph dependency_graph;
@@ -278,9 +305,9 @@ void typecheck_program(
         }
         for(auto& def_defnn_name : group->members) {
             auto& def_defn = defs_defn.find(def_defnn_name)->second;
-            std::cout << "begin typecheck " << def_defnn_name << std::endl;
+            // std::cout << "begin typecheck " << def_defnn_name << std::endl;
             def_defn->typecheck(mgr);
-            std::cout << "finish typecheck " << def_defnn_name << std::endl;
+            // std::cout << "finish typecheck " << def_defnn_name << std::endl;
         }
         for(auto& def_defnn_name : group->members) {
             // std::cout << "begin generalize " << def_defnn_name << std::endl;
@@ -311,7 +338,7 @@ void compile_program(const std::map<std::string, definition_defn_ptr>& defs_defn
     }
 }
 
-void gen_llvm_internal_op(llvm_context& ctx, binop op) {
+void gen_llvm_internal_binop(llvm_context& ctx, binop op) {
     auto new_function = ctx.create_custom_function(binop_action(op), 2);
     std::vector<instruction_ptr> instructions;
     instructions.push_back(instruction_ptr(new instruction_push(1)));
@@ -323,6 +350,21 @@ void gen_llvm_internal_op(llvm_context& ctx, binop op) {
     instructions.push_back(instruction_ptr(new instruction_binop(op)));
     instructions.push_back(instruction_ptr(new instruction_update(2)));
     instructions.push_back(instruction_ptr(new instruction_pop(2)));
+    ctx.builder.SetInsertPoint(&new_function->getEntryBlock());
+    for(auto& instruction : instructions) {
+        instruction->gen_llvm(ctx, new_function);
+    }
+    ctx.builder.CreateRetVoid();
+}
+
+void gen_llvm_internal_uniop(llvm_context& ctx, uniop op) {
+    auto new_function = ctx.create_custom_function(uniop_action(op), 1);
+    std::vector<instruction_ptr> instructions;
+    instructions.push_back(instruction_ptr(new instruction_push(0)));
+    instructions.push_back(instruction_ptr(new instruction_eval()));
+    instructions.push_back(instruction_ptr(new instruction_uniop(op)));
+    instructions.push_back(instruction_ptr(new instruction_update(1)));
+    instructions.push_back(instruction_ptr(new instruction_pop(1)));
     ctx.builder.SetInsertPoint(&new_function->getEntryBlock());
     for(auto& instruction : instructions) {
         instruction->gen_llvm(ctx, new_function);
@@ -374,23 +416,54 @@ void gen_llvm(
         const std::map<std::string, definition_data_ptr>& defs_data,
         const std::map<std::string, definition_defn_ptr>& defs_defn) {
     llvm_context ctx;
-    gen_llvm_internal_op(ctx, PLUS);
-    gen_llvm_internal_op(ctx, MINUS);
-    gen_llvm_internal_op(ctx, TIMES);
-    gen_llvm_internal_op(ctx, DIVIDE);
 
+    std::cout << "Generating LLVM: internal binops." << std::endl;
+    gen_llvm_internal_binop(ctx, PLUS);
+    gen_llvm_internal_binop(ctx, MINUS);
+    gen_llvm_internal_binop(ctx, TIMES);
+    gen_llvm_internal_binop(ctx, DIVIDE);
+    gen_llvm_internal_binop(ctx, BMOD);
+    gen_llvm_internal_binop(ctx, LMOVE);
+    gen_llvm_internal_binop(ctx, RMOVE);
+    gen_llvm_internal_binop(ctx, BITAND);
+    gen_llvm_internal_binop(ctx, BITOR);
+    gen_llvm_internal_binop(ctx, XOR);
+    gen_llvm_internal_binop(ctx, LT);
+    gen_llvm_internal_binop(ctx, GT);
+    gen_llvm_internal_binop(ctx, LEQ);
+    gen_llvm_internal_binop(ctx, GEQ);
+    gen_llvm_internal_binop(ctx, EQ);
+    gen_llvm_internal_binop(ctx, NEQ);
+    gen_llvm_internal_binop(ctx, AND);
+    gen_llvm_internal_binop(ctx, OR);
+    
+    std::cout << "Generating LLVM: internal uniops." << std::endl;
+    gen_llvm_internal_uniop(ctx, NEGATE);
+    gen_llvm_internal_uniop(ctx, NOT);
+    gen_llvm_internal_uniop(ctx, BITNOT);
+
+    std::cout << "Generating LLVM: Data." << std::endl;
     for(auto& def_data : defs_data) {
         def_data.second->generate_llvm(ctx);
     }
+
+    std::cout << "Generating LLVM: Declare functions." << std::endl;
 
     gen_llvm_internal_op(ctx, CONN);
 
     generate_read_llvm(ctx);
     generate_print_llvm(ctx);
 
+    generate_charToNum_llvm(ctx);
+    generate_numToChar_llvm(ctx);
+    generate_floatToNum_llvm(ctx);
+    generate_intToFloat_llvm(ctx);
+
     for(auto& def_defn : defs_defn) {
         def_defn.second->declare_llvm(ctx);
     }
+
+    std::cout << "Generating LLVM: Functions." << std::endl;
     for(auto& def_defn : defs_defn) {
         def_defn.second->generate_llvm(ctx);
     }
@@ -415,7 +488,6 @@ int main() {
     }
     std::cout << "Parsing finished." << std::endl;
 
-    std::cout << "Type checking begin:" << std::endl;
     for(auto& def_defn : defs_defn) {
         std::cout << def_defn.second->name;
         for(auto& param : def_defn.second->params) std::cout << " " << param;
@@ -423,9 +495,17 @@ int main() {
         def_defn.second->body->print(1, std::cout);
     }
     try {
+        std::cout << "Type checking begin:" << std::endl;
         typecheck_program(defs_data, defs_defn, mgr, env);
+        std::cout << "Type checking finished." << std::endl;
+
+        std::cout << "Compilation begin:" << std::endl;
         compile_program(defs_defn);
+        std::cout << "Compilation finished." << std::endl;
+
+        std::cout << "LLVM Generation begin:" << std::endl;
         gen_llvm(defs_data, defs_defn);
+        std::cout << "LLVM Generation finished." << std::endl;
     } catch(unification_error& err) {
         std::cout << "failed to unify types: " << std::endl;
         std::cout << "  (1) \033[34m";
@@ -437,5 +517,4 @@ int main() {
     } catch(type_error& err) {
         std::cout << "failed to type check program: " << err.description << std::endl;
     }
-    std::cout << "Type checking finished." << std::endl;
 }

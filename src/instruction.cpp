@@ -18,6 +18,24 @@ void instruction_pushint::gen_llvm(llvm_context& ctx, Function* f) const {
     ctx.create_push(f, ctx.create_num(f, ctx.create_i32(value)));
 }
 
+void instruction_pushfloat::print(int indent, std::ostream& to) const {
+    print_indent(indent, to);
+    to << "PushFloat(" << value << ")" << std::endl;
+}
+
+void instruction_pushfloat::gen_llvm(llvm_context& ctx, Function* f) const {
+    ctx.create_push(f, ctx.create_float(f, ctx.create_f32(value)));
+}
+
+void instruction_pushchar::print(int indent, std::ostream& to) const {
+    print_indent(indent, to);
+    to << "PushChar(" << value << ")" << std::endl;
+}
+
+void instruction_pushchar::gen_llvm(llvm_context& ctx, Function* f) const {
+    ctx.create_pack(f, ctx.create_size(0), ctx.create_i8(value));
+}
+
 void instruction_pushglobal::print(int indent, std::ostream& to) const {
     print_indent(indent, to);
     to << "PushGlobal(" << name << ")" << std::endl;
@@ -176,16 +194,112 @@ void instruction_binop::gen_llvm(llvm_context& ctx, Function* f) const {
 
         return;
     }
-    auto left_int = ctx.unwrap_num(ctx.create_pop(f));
-    auto right_int = ctx.unwrap_num(ctx.create_pop(f));
-    llvm::Value* result;
-    switch(op) {
-        case PLUS: result = ctx.builder.CreateAdd(left_int, right_int); break;
-        case MINUS: result = ctx.builder.CreateSub(left_int, right_int); break;
-        case TIMES: result = ctx.builder.CreateMul(left_int, right_int); break;
-        case DIVIDE: result = ctx.builder.CreateSDiv(left_int, right_int); break;
+    if (op == AND || op == OR) {
+        auto left_bool_value = ctx.unwrap_data_tag(ctx.create_pop(f));
+        auto right_bool_value = ctx.unwrap_data_tag(ctx.create_pop(f));
+        llvm::Value* result;
+        if (op == AND) {
+            result = ctx.builder.CreateAnd(left_bool_value, right_bool_value);
+        } else {  // OR
+            result = ctx.builder.CreateOr(left_bool_value, right_bool_value);
+        }
+        ctx.create_pack(f, ctx.create_size(0),  // See comments below
+                    ctx.builder.CreateSelect(ctx.builder.CreateICmpNE(result, ctx.create_i8(0)),  // result i8/i32 -> i1
+                            ctx.create_i8(1), ctx.create_i8(0)));
+    } else if (op == PLUS || op == MINUS || op == TIMES || op == DIVIDE) {
+        auto left_value = ctx.create_pop(f);
+        auto right_value = ctx.create_pop(f);
+        auto left_tag = ctx.get_node_tag(left_value);
+        auto right_tag = ctx.get_node_tag(right_value);
+
+        auto is_left_float = ctx.builder.CreateICmpEQ(left_tag, ctx.create_i32(2));  // (enum) Tag == 2 -> float
+        auto is_right_float = ctx.builder.CreateICmpEQ(right_tag, ctx.create_i32(2));
+        auto is_any_float = ctx.builder.CreateOr(is_left_float, is_right_float);
+
+        auto left_num = ctx.unwrap_num(left_value);
+        auto right_num = ctx.unwrap_num(right_value);
+        auto left_float = ctx.unwrap_float(left_value);
+        auto right_float = ctx.unwrap_float(right_value);
+
+        auto left_as_float = ctx.builder.CreateSelect(is_left_float,
+                left_float, ctx.builder.CreateSIToFP(left_num, llvm::Type::getFloatTy(ctx.ctx)));
+        auto right_as_float = ctx.builder.CreateSelect(is_right_float,
+                right_float, ctx.builder.CreateSIToFP(right_num, llvm::Type::getFloatTy(ctx.ctx)));
+
+        llvm::Value* num_result;
+        llvm::Value* float_result;
+        switch (op) {
+            case PLUS:
+                float_result = ctx.builder.CreateFAdd(left_as_float, right_as_float);
+                num_result = ctx.builder.CreateAdd(left_num, right_num);
+                break;
+            case MINUS:
+                float_result = ctx.builder.CreateFSub(left_as_float, right_as_float);
+                num_result = ctx.builder.CreateSub(left_num, right_num);
+                break;
+            case TIMES:
+                float_result = ctx.builder.CreateFMul(left_as_float, right_as_float);
+                num_result = ctx.builder.CreateMul(left_num, right_num);
+                break;
+            case DIVIDE:
+                float_result = ctx.builder.CreateFDiv(left_as_float, right_as_float);
+                num_result = ctx.builder.CreateSDiv(left_num, right_num);
+                break;
+        }
+
+        ctx.create_push(f, ctx.builder.CreateSelect(is_any_float,
+                ctx.create_float(f, float_result), ctx.create_num(f, num_result)));
+    } else {
+        auto left_int = ctx.unwrap_num(ctx.create_pop(f));
+        auto right_int = ctx.unwrap_num(ctx.create_pop(f));
+        llvm::Value* result;
+        switch(op) {
+            case BMOD: result = ctx.builder.CreateSRem(left_int, right_int); break;
+            case LMOVE: result = ctx.builder.CreateShl(left_int, right_int); break;
+            case RMOVE: result = ctx.builder.CreateAShr(left_int, right_int); break;
+            case BITAND: result = ctx.builder.CreateAnd(left_int, right_int); break;
+            case BITOR: result = ctx.builder.CreateOr(left_int, right_int); break;
+            case XOR: result = ctx.builder.CreateXor(left_int, right_int); break;
+            case LT: result = ctx.builder.CreateICmpSLT(left_int, right_int); break;
+            case GT: result = ctx.builder.CreateICmpSGT(left_int, right_int); break;
+            case LEQ: result = ctx.builder.CreateICmpSLE(left_int, right_int); break;
+            case GEQ: result = ctx.builder.CreateICmpSGE(left_int, right_int); break;
+            case EQ: result = ctx.builder.CreateICmpEQ(left_int, right_int); break;
+            case NEQ: result = ctx.builder.CreateICmpNE(left_int, right_int); break;
+        }
+        if (op == LT || op == GT || op == LEQ || op == GEQ || op == EQ || op == NEQ) {
+            // For (num -> (num -> (Bool*))) operations, we need to simulate a Data constructor here.
+            // See instruction.cpp - void instruction_pack::gen_llvm and definition.cpp - void definition_data::generate_llvm.
+            ctx.create_pack(f, ctx.create_size(0),  // The constructor takes 0 elements in the stack (or, arity = 0).
+                    ctx.builder.CreateSelect(result, ctx.create_i8(1), ctx.create_i8(0)));  // The constructor-tag is 1 (True) or 0 (False), depanded on result.
+        } else {
+            ctx.create_push(f, ctx.create_num(f, result));
+        }
     }
-    ctx.create_push(f, ctx.create_num(f, result));
+}
+
+void instruction_uniop::print(int indent, std::ostream& to) const {
+    print_indent(indent, to);
+    to << "UniOp(" << uniop_name(op) << ")" << std::endl;
+}
+
+void instruction_uniop::gen_llvm(llvm_context& ctx, Function* f) const {
+    if (op == NOT) {
+        auto bool_value = ctx.unwrap_data_tag(ctx.create_pop(f));  // i8
+        auto result = ctx.builder.CreateICmpEQ(bool_value, ctx.create_i8(0));  // !a <--> (a == False) for (bool)a
+        ctx.create_pack(f, ctx.create_size(0),
+                ctx.builder.CreateSelect(result, ctx.create_i8(1), ctx.create_i8(0)));
+    } else if (op == BITNOT) {
+        auto int_value = ctx.unwrap_num(ctx.create_pop(f));
+        auto result = ctx.builder.CreateNot(int_value);
+        ctx.create_push(f, ctx.create_num(f, result));
+    } else {  // op == NEGATE
+        auto value = ctx.create_pop(f);
+        ctx.create_push(f, ctx.builder.CreateSelect(
+                ctx.builder.CreateICmpEQ(ctx.get_node_tag(value), ctx.create_i32(2)),  // is_float
+                        ctx.create_float(f, ctx.builder.CreateFNeg(ctx.unwrap_float(value))),
+                        ctx.create_num(f, ctx.builder.CreateNeg(ctx.unwrap_num(value)))));
+    }
 }
 
 void instruction_eval::print(int indent, std::ostream& to) const {

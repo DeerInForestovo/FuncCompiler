@@ -43,6 +43,7 @@ struct llvm_context {
     llvm::ConstantInt* create_i8(int8_t);
     llvm::ConstantInt* create_i32(int32_t);
     llvm::ConstantInt* create_size(size_t);
+    llvm::ConstantFP* create_f32(float_t);
 
     llvm::Value* create_pop(llvm::Function*);
     llvm::Value* create_peek(llvm::Function*, llvm::Value*);
@@ -62,9 +63,13 @@ struct llvm_context {
     llvm::Value* unwrap_gmachine_stack_ptr(llvm::Value*);
 
     llvm::Value* unwrap_num(llvm::Value*);
+    llvm::Value* unwrap_float(llvm::Value*);
     llvm::Value* create_num(llvm::Function*, llvm::Value*);
+    llvm::Value* create_float(llvm::Function*, llvm::Value*);
+    llvm::Value* create_data(llvm::Function*, llvm::Value*, llvm::Value*);
 
     llvm::Value* unwrap_data_tag(llvm::Value*);
+    llvm::Value* get_node_tag(llvm::Value*);
 
     llvm::Value* create_global(llvm::Function*, llvm::Value*, llvm::Value*);
 

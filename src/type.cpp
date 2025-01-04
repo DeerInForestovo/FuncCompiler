@@ -134,6 +134,10 @@ void type_mgr::unify(type_ptr l, type_ptr r) {
             unify(*left_it, *right_it);
             left_it++, right_it++;
         }
+        // Not sure whether this is needed.
+        if (left_it != lapp->arguments.end() ||
+                right_it != rapp->arguments.end())
+            throw unification_error(l, r);
         return;
     }
 
