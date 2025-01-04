@@ -262,6 +262,14 @@ void typecheck_program(
     env->bind("floatToNum", floatToNum_type_ptr);
     prelude_func.insert("floatToNum");
 
+    // intToFloat part
+    
+    type_ptr intToFloat_type = type_ptr(new type_arr(int_type_app, float_type_app));
+    type_scheme_ptr intToFloat_type_ptr = type_scheme_ptr(new type_scheme(std::move(intToFloat_type)));
+    intToFloat_type_ptr->forall.emplace_back("Num", true);
+    env->bind("intToFloat", intToFloat_type_ptr);
+    prelude_func.insert("intToFloat");
+
     // std::cout << "Insert prelude functions, finished." << std::endl;
 
     function_graph dependency_graph;
@@ -443,6 +451,7 @@ void gen_llvm(
     generate_charToNum_llvm(ctx);
     generate_numToChar_llvm(ctx);
     generate_floatToNum_llvm(ctx);
+    generate_intToFloat_llvm(ctx);
 
     for(auto& def_defn : defs_defn) {
         def_defn.second->declare_llvm(ctx);

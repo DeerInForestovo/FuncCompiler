@@ -141,3 +141,17 @@ void generate_floatToNum_llvm(llvm_context& ctx) {
 
     ctx.builder.CreateRetVoid();
 }
+
+void generate_intToFloat_llvm(llvm_context& ctx) {
+    auto f = ctx.create_custom_function("intToFloat", 1);
+    ctx.builder.SetInsertPoint(&f->getEntryBlock());
+
+    (new instruction_push(0))->gen_llvm(ctx, f);
+    (new instruction_eval())->gen_llvm(ctx, f);
+    ctx.create_push(f, ctx.create_float(f, ctx.builder.CreateSIToFP(
+            ctx.unwrap_num(ctx.create_pop(f)), llvm::Type::getFloatTy(ctx.ctx))));
+    (new instruction_update(1))->gen_llvm(ctx, f);
+    (new instruction_pop(1))->gen_llvm(ctx, f);
+
+    ctx.builder.CreateRetVoid();
+}
