@@ -20,7 +20,6 @@ std::string binop_name(binop op) {
         case GEQ: return ">=";
         case EQ: return "==";
         case NEQ: return "!=";
-        case INDEX: return "_";
         case CONN: return "++";
     }
     return "??";
@@ -46,7 +45,6 @@ std::string binop_action(binop op) {
         case GEQ: return "geq";
         case EQ: return "eq";
         case NEQ: return "neq";
-        case INDEX: return "index";
         case CONN: return "concat";
     }
     return "??";

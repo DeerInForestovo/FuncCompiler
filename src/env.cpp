@@ -1,9 +1,10 @@
 #include "env.hpp"
+#include "error.hpp"
 
 int env_var::get_offset(const std::string& name) const {
     if(name == this->name) return 0;
     if(parent) return parent->get_offset(name) + 1;
-    throw 0;
+    throw unexpected_error("env_var::get_offset: name not found");
 }
 
 bool env_var::has_variable(const std::string& name) const {
@@ -14,7 +15,7 @@ bool env_var::has_variable(const std::string& name) const {
 
 int env_offset::get_offset(const std::string& name) const {
     if(parent) return parent->get_offset(name) + offset;
-    throw 0;
+    throw unexpected_error("env_offset::get_offset: name not found");
 }
 
 bool env_offset::has_variable(const std::string& name) const {

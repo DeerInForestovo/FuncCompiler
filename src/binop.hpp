@@ -5,7 +5,7 @@ enum binop {
     PLUS, MINUS, TIMES, DIVIDE, BMOD,
     LMOVE, RMOVE, BITAND, BITOR, AND, OR, XOR,
     LT, GT, LEQ, GEQ, EQ, NEQ,
-    INDEX, CONN,
+    CONN,
 };
 
 std::string binop_name(binop op);

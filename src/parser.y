@@ -31,7 +31,6 @@ void yyerror(const std::string &msg) {
 %left PLUS MINUS
 %left TIMES DIVIDE BMOD
 %left CONNECT
-%left INDEX
 
 %token <float> FLOATNUMBER
 %token <int> INTEGER
@@ -68,7 +67,7 @@ void yyerror(const std::string &msg) {
 %type <std::vector<action_ptr>> actions actionOrBinds
 %type <std::vector<parsed_type_ptr>> typeList
 %type <parsed_type_ptr> type nonArrowType typeListElement
-%type <ast_ptr> aAdd aMul case app appBase appIndex appConn appUniop aOr aAnd aBitor aXor aBitand aCmpeq aCmp aMove list
+%type <ast_ptr> aAdd aMul case app appBase appConn appUniop aOr aAnd aBitor aXor aBitand aCmpeq aCmp aMove list
 %type <definition_data_ptr> data 
 %type <definition_defn_ptr> defn
 %type <branch_ptr> branch branchDo
@@ -243,11 +242,7 @@ appUniop  // Apply union-operators
     | appConn { $$ = std::move($1); }
 
 appConn  // Connect two lists
-    : appConn CONNECT appIndex { $$ = ast_ptr(new ast_binop(CONN, std::move($1), std::move($3))); }
-    | appIndex { $$ = std::move($1); }
-
-appIndex  // Index from a list
-    : appIndex INDEX appBase { $$ = ast_ptr(new ast_binop(INDEX, std::move($1), std::move($3))); }
+    : appConn CONNECT appBase { $$ = ast_ptr(new ast_binop(CONN, std::move($1), std::move($3))); }
     | appBase { $$ = std::move($1); }
 
 appBase

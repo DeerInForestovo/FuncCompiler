@@ -33,8 +33,8 @@ void type_env::bind_type(const std::string& type_name, type_ptr t) {
 
 void type_env::generalize(const std::string& name, type_mgr& mgr) {
     auto names_it = names.find(name);
-    if(names_it == names.end()) throw 0;
-    if(names_it->second->forall.size() > 0) throw 0;
+    if(names_it == names.end()) throw unexpected_error("type_env::generalize: name not found.");
+    if(names_it->second->forall.size() > 0) throw unexpected_error("type_env::generalize: names_it->second->forall.size() > 0");
 
     std::set<std::pair<std::string, bool>> free_variables;
     std::vector<type_ptr> ptr_stack;

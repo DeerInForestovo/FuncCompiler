@@ -198,7 +198,8 @@ bool type_mgr::bind(type_var* s, type_ptr t) {
 void type_mgr::find_free(const type_ptr& t, 
                          std::set<std::pair<std::string, bool>>& into, 
                          std::vector<type_ptr> &ancestors) const {
-    if (std::find(ancestors.begin(), ancestors.end(), t) != ancestors.end()) throw 0; // invalid recursion
+    if (std::find(ancestors.begin(), ancestors.end(), t) != ancestors.end())
+        throw unexpected_error("type_mgr::find_free: invalid recursion.");
     
     type_var* var;
     type_ptr resolved = resolve(t, var);

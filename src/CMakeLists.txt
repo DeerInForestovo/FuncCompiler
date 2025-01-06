@@ -14,11 +14,11 @@ find_package(LLVM REQUIRED CONFIG)
 # Set up the flex and bison targets
 bison_target(parser
     ${CMAKE_CURRENT_SOURCE_DIR}/parser.y
-    ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp
+    ${CMAKE_BINARY_DIR}/parser.cpp
     COMPILE_FLAGS "-d")
 flex_target(scanner
     ${CMAKE_CURRENT_SOURCE_DIR}/scanner.l
-    ${CMAKE_CURRENT_BINARY_DIR}/scanner.cpp)
+    ${CMAKE_BINARY_DIR}/scanner.cpp)
 add_flex_bison_dependency(scanner parser)
 
 # Find all the relevant LLVM components
@@ -46,7 +46,7 @@ add_executable(compiler
 
 # Configure compiler executable
 target_include_directories(compiler PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(compiler PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(compiler PUBLIC ${CMAKE_BINARY_DIR})
 target_include_directories(compiler PUBLIC ${LLVM_INCLUDE_DIRS})
 target_compile_definitions(compiler PUBLIC ${LLVM_DEFINITIONS})
 target_link_libraries(compiler ${LLVM_LIBS})

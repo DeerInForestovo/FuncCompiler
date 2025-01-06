@@ -1,5 +1,6 @@
 #include "ast.hpp"
 #include <iostream>
+#include <fstream>
 #include "binop.hpp"
 #include "definition.hpp"
 #include "graph.hpp"
@@ -141,11 +142,9 @@ void typecheck_program(
     for(auto& def_data : defs_data) {
         def_data.second->insert_types(env);
     }
-    std::cout << "insert_types, finished." << std::endl;
     for(auto& def_data : defs_data) {
         def_data.second->insert_constructors();
     }
-    std::cout << "insert_constructors, finished." << std::endl;
 
     type_ptr list_arg_type = type_ptr(new type_var("ListArg"));
     type_app *list_app = new type_app(type_ptr(env->lookup_type("List")));
@@ -159,7 +158,6 @@ void typecheck_program(
     /*
         Bind op types
     */
-    // std::cout << "Bind num_op types:" << std::endl;
     type_ptr num_op_type = type_ptr(new type_arr(num_type_app, type_ptr(
             new type_arr(num_type_app, num_type_app))));
     type_scheme_ptr num_op_type_ptr = type_scheme_ptr(new type_scheme(std::move(num_op_type)));
@@ -180,7 +178,6 @@ void typecheck_program(
     env->bind("==", num_cmp_type_ptr);
     env->bind("!=", num_cmp_type_ptr);
 
-    // std::cout << "Bind int_op types:" << std::endl;
     type_ptr int_op_type = type_ptr(new type_arr(int_type_app, type_ptr(
             new type_arr(int_type_app, int_type_app))));
     env->bind("%", int_op_type);
@@ -190,35 +187,22 @@ void typecheck_program(
     env->bind("<<", int_op_type);
     env->bind(">>", int_op_type);
 
-    // std::cout << "Bind bool_op types:" << std::endl;
     type_ptr bool_op_type = type_ptr(new type_arr(bool_type_app, type_ptr(
             new type_arr(bool_type_app, bool_type_app))));
     env->bind("||", bool_op_type);
     env->bind("&&", bool_op_type);
 
-    // std::cout << "Bind num_uniop types:" << std::endl;
     type_ptr num_uniop_type = type_ptr(new type_arr(num_type_app, num_type_app));
     type_scheme_ptr num_uniop_type_ptr = type_scheme_ptr(new type_scheme(std::move(num_uniop_type)));
     num_uniop_type_ptr->forall.emplace_back("Num", true);
     env->bind("--", num_uniop_type_ptr);  // This op is negate
 
-    // std::cout << "Bind int_uniop types:" << std::endl;
     type_ptr int_uniop_type = type_ptr(new type_arr(int_type_app, int_type_app));
     env->bind("~", int_uniop_type);
     
-    // std::cout << "Bind bool_uniop types:" << std::endl;
     type_ptr bool_uniop_type = type_ptr(new type_arr(bool_type_app, bool_type_app));
     env->bind("!", bool_uniop_type);
 
-    // std::cout << "Bind index:" << std::endl;
-    type_ptr index_type = type_ptr(new type_arr(list_type_app, type_ptr(
-            new type_arr(int_type_app, list_arg_type))));
-    type_scheme* index_type_scheme = new type_scheme(std::move(index_type));
-    index_type_scheme->forall.emplace_back("ListArg", false);
-    type_scheme_ptr index_type_ptr = type_scheme_ptr(index_type_scheme);
-    env->bind("_", index_type_ptr);
-
-    // std::cout << "Bind conn:" << std::endl;
     type_ptr conn_type = type_ptr(new type_arr(list_type_app, type_ptr(
             new type_arr(list_type_app, list_type_app))));
     type_scheme* conn_type_scheme = new type_scheme(std::move(conn_type));
@@ -226,14 +210,12 @@ void typecheck_program(
     type_scheme_ptr conn_type_ptr = type_scheme_ptr(conn_type_scheme);
     env->bind("++", conn_type_ptr);
 
-    // std::cout << "Bind base types and op types, finished." << std::endl;
-
-    // add read and print
-
+    /*
+        Bind prelude functions
+    */
     std::set<std::string> prelude_func;
 
-    // read part
-
+    // read
     type_ptr string_type = mgr.new_type();
     mgr.unify(type_ptr(new type_arr(char_type_app, string_type)), list_bind_scheme_ptr->instantiate(mgr));
 
@@ -242,48 +224,42 @@ void typecheck_program(
     env->bind("read", read_type);
     prelude_func.insert("read");
 
-    // print part
-
+    // print
     type_ptr io_empty_type = mgr.new_type();
     mgr.unify(type_ptr(new type_arr(empty_type_app, io_empty_type)), io_bind_scheme_ptr->instantiate(mgr));
-
     type_ptr print_type(new type_arr(string_type, io_empty_type));
     env->bind("print", print_type);
     prelude_func.insert("print");
 
-    // charToNum part
-    
+    // charToNum
     type_ptr charToNum_type = type_ptr(new type_arr(char_type_app, num_type_app));
     type_scheme_ptr charToNum_type_ptr = type_scheme_ptr(new type_scheme(std::move(charToNum_type)));
     charToNum_type_ptr->forall.emplace_back("Num", true);
     env->bind("charToNum", charToNum_type_ptr);
     prelude_func.insert("charToNum");
 
-    // numToChar part
-    
+    // numToChar
     type_ptr numToChar_type = type_ptr(new type_arr(num_type_app, char_type_app));
     type_scheme_ptr numToChar_type_ptr = type_scheme_ptr(new type_scheme(std::move(numToChar_type)));
     numToChar_type_ptr->forall.emplace_back("Num", true);
     env->bind("numToChar", numToChar_type_ptr);
     prelude_func.insert("numToChar");
 
-    // floatToNum part
-    
+    // floatToNum
     type_ptr floatToNum_type = type_ptr(new type_arr(float_type_app, num_type_app));
     type_scheme_ptr floatToNum_type_ptr = type_scheme_ptr(new type_scheme(std::move(floatToNum_type)));
     floatToNum_type_ptr->forall.emplace_back("Num", true);
     env->bind("floatToNum", floatToNum_type_ptr);
     prelude_func.insert("floatToNum");
 
-    // intToFloat part
-    
+    // intToFloat
     type_ptr intToFloat_type = type_ptr(new type_arr(int_type_app, float_type_app));
     type_scheme_ptr intToFloat_type_ptr = type_scheme_ptr(new type_scheme(std::move(intToFloat_type)));
     intToFloat_type_ptr->forall.emplace_back("Num", true);
     env->bind("intToFloat", intToFloat_type_ptr);
     prelude_func.insert("intToFloat");
 
-    // array part
+    // array
     type_app *newarray_list_app = new type_app(type_ptr(env->lookup_type("List")));
     type_ptr newarray_list_type = type_ptr(newarray_list_app);
     newarray_list_app->arguments.push_back(array_arg_type);
@@ -294,14 +270,14 @@ void typecheck_program(
     env->bind("array", newarray_type_ptr);
     prelude_func.insert("array");
 
-    // size part
+    // size
     type_ptr size_type = type_ptr(new type_arr(array_type_ptr, int_type_app));
     type_scheme_ptr size_type_ptr = type_scheme_ptr(new type_scheme(std::move(size_type)));
     size_type_ptr->forall.emplace_back("ArrayArg", false);
     env->bind("size", size_type_ptr);
     prelude_func.insert("size");
 
-    // access part
+    // access
     type_ptr access_right = type_ptr(new type_arr(int_type_app, array_arg_type));
     type_ptr access_type = type_ptr(new type_arr(array_type_ptr, access_right));
     type_scheme_ptr access_type_ptr = type_scheme_ptr(new type_scheme(std::move(access_type)));
@@ -309,7 +285,7 @@ void typecheck_program(
     env->bind("access", access_type_ptr);
     prelude_func.insert("access");
 
-    // modify part
+    // modify
     type_app *io_array_type_app = new type_app(type_ptr(env->lookup_type("IO")));
     type_ptr io_array_type = type_ptr(io_array_type_app);
     io_array_type_app->arguments.push_back(array_type_ptr);
@@ -320,8 +296,6 @@ void typecheck_program(
     modify_type_ptr->forall.emplace_back("ArrayArg", false);
     env->bind("modify", modify_type_ptr);
     prelude_func.insert("modify");
-
-    // std::cout << "Insert prelude functions, finished." << std::endl;
 
     function_graph dependency_graph;
 
@@ -338,52 +312,29 @@ void typecheck_program(
                 }
             }
             dependency_graph.add_edge(def_defn.second->name, dependency);
-            // std::cout << "add_edge " << def_defn.second->name << " " << dependency << std::endl;
         }
     }
 
     std::vector<group_ptr> groups = dependency_graph.compute_order();
-    std::cout << "compute_order, finished." << std::endl;
     for(auto it = groups.rbegin(); it != groups.rend(); it++) {
         auto& group = *it;
         for(auto& def_defnn_name : group->members) {
             auto& def_defn = defs_defn.find(def_defnn_name)->second;
-            // std::cout << "begin insert_types " << def_defnn_name << std::endl;
             def_defn->insert_types(mgr);
-            // std::cout << "finish insert_types " << def_defnn_name << std::endl;
         }
         for(auto& def_defnn_name : group->members) {
             auto& def_defn = defs_defn.find(def_defnn_name)->second;
-            // std::cout << "begin typecheck " << def_defnn_name << std::endl;
             def_defn->typecheck(mgr);
-            // std::cout << "finish typecheck " << def_defnn_name << std::endl;
         }
         for(auto& def_defnn_name : group->members) {
-            // std::cout << "begin generalize " << def_defnn_name << std::endl;
             env->generalize(def_defnn_name, mgr);
-            // std::cout << "finish generalize " << def_defnn_name << std::endl;
         }
-    }
-
-    // std::cout << "Type Checking Result:" << std::endl;
-    for(auto& pair : env->names) {
-        char fi_letter = pair.first[0];
-        if (!('a' <= fi_letter && fi_letter <= 'z'
-                || 'A' <= fi_letter && fi_letter <= 'Z')) continue;
-        std::cout << pair.first << ": ";
-        pair.second->print(mgr, std::cout);
-        std::cout << std::endl;
     }
 }
 
 void compile_program(const std::map<std::string, definition_defn_ptr>& defs_defn) {
     for(auto& def_defn : defs_defn) {
         def_defn.second->compile();
-
-        for(auto& instruction : def_defn.second->instructions) {
-            instruction->print(0, std::cout);
-        }
-        std::cout << std::endl;
     }
 }
 
@@ -447,12 +398,12 @@ void output_llvm(llvm_context& ctx, const std::string& filename) {
         std::error_code ec;
         llvm::raw_fd_ostream file(filename, ec, llvm::sys::fs::F_None);
         if (ec) {
-            throw 0;
+            throw unexpected_error("LLVM error 1.");
         } else {
             llvm::CodeGenFileType type = llvm::CGFT_ObjectFile;
             llvm::legacy::PassManager pm;
             if (targetMachine->addPassesToEmitFile(pm, file, NULL, type)) {
-                throw 0;
+                throw unexpected_error("LLVM error 2.");
             } else {
                 pm.run(ctx.module);
                 file.close();
@@ -466,7 +417,6 @@ void gen_llvm(
         const std::map<std::string, definition_defn_ptr>& defs_defn) {
     llvm_context ctx;
 
-    std::cout << "Generating LLVM: internal binops." << std::endl;
     gen_llvm_internal_binop(ctx, PLUS);
     gen_llvm_internal_binop(ctx, MINUS);
     gen_llvm_internal_binop(ctx, TIMES);
@@ -486,17 +436,13 @@ void gen_llvm(
     gen_llvm_internal_binop(ctx, AND);
     gen_llvm_internal_binop(ctx, OR);
     
-    std::cout << "Generating LLVM: internal uniops." << std::endl;
     gen_llvm_internal_uniop(ctx, NEGATE);
     gen_llvm_internal_uniop(ctx, NOT);
     gen_llvm_internal_uniop(ctx, BITNOT);
 
-    std::cout << "Generating LLVM: Data." << std::endl;
     for(auto& def_data : defs_data) {
         def_data.second->generate_llvm(ctx);
     }
-
-    std::cout << "Generating LLVM: Declare functions." << std::endl;
 
     gen_llvm_internal_binop(ctx, CONN);
 
@@ -517,12 +463,16 @@ void gen_llvm(
         def_defn.second->declare_llvm(ctx);
     }
 
-    std::cout << "Generating LLVM: Functions." << std::endl;
     for(auto& def_defn : defs_defn) {
         def_defn.second->generate_llvm(ctx);
     }
 
-    ctx.module.print(llvm::outs(), nullptr);
+    // ctx.module.print(log_file, nullptr);
+
+    std::error_code EC;
+    llvm::raw_fd_ostream file_stream("llvm_log.txt", EC, llvm::sys::fs::OF_None);
+    if (!EC) ctx.module.print(file_stream, nullptr);
+
     output_llvm(ctx, "program.o");
 }
 
@@ -531,7 +481,6 @@ int main() {
     type_mgr mgr;
     type_env_ptr env(new type_env);
 
-    std::cout << "Parsing begin:" << std::endl;
     parser.parse();
     if (lexer_error_cnt || parser_error_cnt || uncovered_parser_error_cnt) {
         std::cout << "Parsing failed. (" <<
@@ -540,28 +489,46 @@ int main() {
             uncovered_parser_error_cnt << " uncovered parser error(s).)" << std::endl;
         return 0;
     }
-    std::cout << "Parsing finished." << std::endl;
 
-    for(auto& def_defn : defs_defn) {
-        std::cout << def_defn.second->name;
-        for(auto& param : def_defn.second->params) std::cout << " " << param;
-        std::cout << ":" << std::endl;
-        def_defn.second->body->print(1, std::cout);
+    std::ofstream log_file("log.txt", std::ios::out | std::ios::trunc);
+    if (!log_file.is_open()) {
+        std::cout << "Unable to open log.txt." << std::endl;
     }
+
+    log_file << "[AST:]\n";
+    for(auto& def_defn : defs_defn) {
+        log_file << def_defn.second->name;
+        for(auto& param : def_defn.second->params) log_file << " " << param;
+        log_file << ":\n";
+        def_defn.second->body->print(1, log_file);
+    }
+
     try {
-        std::cout << "Type checking begin:" << std::endl;
         typecheck_program(defs_data, defs_defn, mgr, env);
-        std::cout << "Type checking finished." << std::endl;
+        log_file << "\n\n\n[Typecheck result:]\n";
+        for(auto& pair : env->names) {
+            char fi_letter = pair.first[0];
+            log_file << pair.first << ": ";
+            pair.second->print(mgr, log_file);
+            log_file << "\n";
+        }
 
-        std::cout << "Compilation begin:" << std::endl;
         compile_program(defs_defn);
-        std::cout << "Compilation finished." << std::endl;
+        log_file << "\n\n\n[Compile result:]\n";
+        for(auto& def_defn : defs_defn) {
+            log_file << def_defn.second->name << ":\n";
+            for(auto& instruction : def_defn.second->instructions) {
+                instruction->print(0, log_file);
+            }
+            log_file << "\n";
+        }
 
-        std::cout << "LLVM Generation begin:" << std::endl;
         gen_llvm(defs_data, defs_defn);
-        std::cout << "LLVM Generation finished." << std::endl;
+
+        std::cout << "Compiled successfully." << std::endl;
     } catch(unification_error& err) {
-        std::cout << "failed to unify types: " << std::endl;
+        std::cout << std::endl;
+        std::cout << "Failed to unify types: " << std::endl;
         std::cout << "  (1) \033[34m";
         err.left->print(mgr, std::cout);
         std::cout << "\033[0m" << std::endl;
@@ -569,6 +536,14 @@ int main() {
         err.right->print(mgr, std::cout);
         std::cout << "\033[0m" << std::endl;
     } catch(type_error& err) {
-        std::cout << "failed to type check program: " << err.description << std::endl;
+        std::cout << std::endl;
+        std::cout << "Failed to type check program: " << err.description << std::endl;
+    } catch(unexpected_error& err) {
+        std::cout << std::endl;
+        std::cout << "Unexpected Error: " << err.description << std::endl;
+    }
+
+    if (log_file.is_open()) {
+        log_file.close();
     }
 }
