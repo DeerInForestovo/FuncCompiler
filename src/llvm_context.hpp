@@ -71,6 +71,9 @@ struct llvm_context {
     llvm::Value* unwrap_data_tag(llvm::Value*);
     llvm::Value* get_node_tag(llvm::Value*);
 
+    llvm::Value* access_array(llvm::Value*, llvm::Value*);
+    void modify_array(llvm::Value*, llvm::Value*, llvm::Value*);
+
     llvm::Value* create_global(llvm::Function*, llvm::Value*, llvm::Value*);
 
     llvm::Value* create_app(llvm::Function*, llvm::Value*, llvm::Value*);

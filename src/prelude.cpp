@@ -155,3 +155,97 @@ void generate_intToFloat_llvm(llvm_context& ctx) {
 
     ctx.builder.CreateRetVoid();
 }
+
+void generate_array_llvm(llvm_context &ctx) {
+    Function *f = ctx.create_custom_function("array", 1);
+    ctx.builder.SetInsertPoint(&f->getEntryBlock());
+
+    BasicBlock *loop_block = BasicBlock::Create(ctx.ctx, "loop", f);
+    BasicBlock *cons_block = BasicBlock::Create(ctx.ctx, "cons", f);
+    BasicBlock *final_block = BasicBlock::Create(ctx.ctx, "final", f);
+
+    llvm::AllocaInst *counter = ctx.builder.CreateAlloca(ctx.builder.getInt32Ty(), nullptr);
+    ctx.builder.CreateStore(ctx.builder.getInt32(0), counter);
+
+    ctx.builder.CreateBr(loop_block);
+
+    ctx.builder.SetInsertPoint(loop_block);
+    ctx.create_unwind(f);
+    Value *top_node = ctx.create_peek(f, ctx.create_size(0));
+    Value *tag_i8 = ctx.unwrap_data_tag(top_node);
+    Value *tag_i1 = ctx.builder.CreateICmpNE(tag_i8, ConstantInt::get(ctx.builder.getInt8Ty(), 0));
+    ctx.builder.CreateCondBr(tag_i1, cons_block, final_block);
+
+    ctx.builder.SetInsertPoint(cons_block);
+
+    ctx.create_split(f, ctx.create_size(2));
+    Value *node_1 = ctx.create_pop(f);
+    Value *node_2 = ctx.create_pop(f);
+    ctx.create_disablegc(f);
+    ctx.create_push(f, node_1);
+    ctx.create_enablegc(f);
+    ctx.create_push(f, node_2);
+
+    Value *cur_val = ctx.builder.CreateLoad(counter);
+    Value *add_one = ctx.builder.CreateAdd(cur_val, ctx.builder.getInt32(1));
+    ctx.builder.CreateStore(add_one, counter);
+
+    ctx.builder.CreateBr(loop_block);
+
+    ctx.builder.SetInsertPoint(final_block);
+    ctx.create_popn(f, ctx.create_size(1));
+    Value *final_val = ctx.builder.CreateLoad(counter);
+    Value *final_val_i8 = ctx.builder.CreateTrunc(final_val, ctx.builder.getInt8Ty());
+    ctx.create_pack(f, final_val, final_val_i8);
+
+    ctx.create_update(f, ctx.create_size(0));
+
+    ctx.builder.CreateRetVoid();
+}
+
+void generate_size_llvm(llvm_context &ctx) {
+    Function *f = ctx.create_custom_function("size", 1);
+    ctx.builder.SetInsertPoint(&f->getEntryBlock());
+
+    ctx.create_unwind(f);
+    Value *top_node = ctx.create_pop(f);
+    Value *tag = ctx.unwrap_data_tag(top_node);
+    Value *size = ctx.builder.CreateZExt(tag, ctx.builder.getInt32Ty());
+    ctx.create_push(f, ctx.create_num(f, size));
+
+    ctx.create_update(f, ctx.create_size(0));
+
+    ctx.builder.CreateRetVoid();
+}
+
+void generate_access_llvm(llvm_context &ctx) {
+    Function *f = ctx.create_custom_function("access", 2);
+    ctx.builder.SetInsertPoint(&f->getEntryBlock());
+
+    ctx.create_unwind(f);
+    Value *array = ctx.create_pop(f);
+    ctx.create_unwind(f);
+    Value *index = ctx.create_pop(f);
+    ctx.create_push(f, ctx.access_array(array, index));
+
+    ctx.create_update(f, ctx.create_size(0));
+
+    ctx.builder.CreateRetVoid();
+}
+
+void generate_modify_llvm(llvm_context &ctx) {
+    Function *f = ctx.create_custom_function("modify", 3);
+    ctx.builder.SetInsertPoint(&f->getEntryBlock());
+
+    ctx.create_unwind(f);
+    Value *array = ctx.create_pop(f);
+    ctx.create_unwind(f);
+    Value *index = ctx.create_pop(f);
+    Value *operand = ctx.create_pop(f);
+    ctx.modify_array(array, index, operand);
+    
+    ctx.create_pack(f, ctx.create_size(0), ctx.builder.getInt8(0));
+    ctx.create_update(f, ctx.create_size(0));
+
+    ctx.builder.CreateRetVoid();
+}

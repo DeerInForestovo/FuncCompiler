@@ -126,6 +126,17 @@ void typecheck_program(
     io_bind_scheme_ptr->forall.emplace_back("IOArg", false);
     env->bind("_IOBindCons", io_bind_scheme_ptr);
 
+    // add array
+    definition_data_ptr array_type = definition_data_ptr(
+            new definition_data("Array", std::vector<std::string>{"ArrayArg"}, std::vector<constructor_ptr>()));
+    array_type->insert_types(env);
+
+    type_ptr array_arg_type = type_ptr(new type_var("ArrayArg"));
+
+    type_app *array_app = new type_app(type_ptr(env->lookup_type("Array")));
+    type_ptr array_type_ptr = type_ptr(array_app);
+    array_app->arguments.push_back(array_arg_type);
+
     // insert all data definitions
     for(auto& def_data : defs_data) {
         def_data.second->insert_types(env);
@@ -271,6 +282,41 @@ void typecheck_program(
     intToFloat_type_ptr->forall.emplace_back("Num", true);
     env->bind("intToFloat", intToFloat_type_ptr);
     prelude_func.insert("intToFloat");
+
+    // array part
+    type_app *newarray_list_app = new type_app(type_ptr(env->lookup_type("List")));
+    type_ptr newarray_list_type = type_ptr(newarray_list_app);
+    newarray_list_app->arguments.push_back(array_arg_type);
+
+    type_ptr newarray_type = type_ptr(new type_arr(newarray_list_type, array_type_ptr));
+    type_scheme_ptr newarray_type_ptr = type_scheme_ptr(new type_scheme(std::move(newarray_type)));
+    newarray_type_ptr->forall.emplace_back("ArrayArg", false);
+    env->bind("array", newarray_type_ptr);
+    prelude_func.insert("array");
+
+    // size part
+    type_ptr size_type = type_ptr(new type_arr(array_type_ptr, int_type_app));
+    type_scheme_ptr size_type_ptr = type_scheme_ptr(new type_scheme(std::move(size_type)));
+    size_type_ptr->forall.emplace_back("ArrayArg", false);
+    env->bind("size", size_type_ptr);
+    prelude_func.insert("size");
+
+    // access part
+    type_ptr access_right = type_ptr(new type_arr(int_type_app, array_arg_type));
+    type_ptr access_type = type_ptr(new type_arr(array_type_ptr, access_right));
+    type_scheme_ptr access_type_ptr = type_scheme_ptr(new type_scheme(std::move(access_type)));
+    access_type_ptr->forall.emplace_back("ArrayArg", false);
+    env->bind("access", access_type_ptr);
+    prelude_func.insert("access");
+
+    // modify part
+    type_ptr modify_right1 = type_ptr(new type_arr(array_arg_type, io_empty_type));
+    type_ptr modify_right2 = type_ptr(new type_arr(int_type_app, modify_right1));
+    type_ptr modify_type = type_ptr(new type_arr(array_type_ptr, modify_right2));
+    type_scheme_ptr modify_type_ptr = type_scheme_ptr(new type_scheme(std::move(modify_type)));
+    modify_type_ptr->forall.emplace_back("ArrayArg", false);
+    env->bind("modify", modify_type_ptr);
+    prelude_func.insert("modify");
 
     // std::cout << "Insert prelude functions, finished." << std::endl;
 
@@ -458,6 +504,11 @@ void gen_llvm(
     generate_numToChar_llvm(ctx);
     generate_floatToNum_llvm(ctx);
     generate_intToFloat_llvm(ctx);
+
+    generate_array_llvm(ctx);
+    generate_size_llvm(ctx);
+    generate_access_llvm(ctx);
+    generate_modify_llvm(ctx);
 
     for(auto& def_defn : defs_defn) {
         def_defn.second->declare_llvm(ctx);

@@ -316,6 +316,30 @@ Value* llvm_context::get_node_tag(Value* node_ptr) {
     return builder.CreateLoad(tag_ptr);
 }
 
+llvm::Value *llvm_context::access_array(Value *v, Value *index) {
+    auto data_ptr_type = PointerType::getUnqual(struct_types.at("node_data"));
+    auto cast = builder.CreatePointerCast(v, data_ptr_type);
+    auto offset_0 = create_i32(0);
+    auto offset_1 = create_i32(2);
+    auto array_ptr = builder.CreateGEP(cast, { offset_0, offset_1 });
+    auto real_array_ptr = builder.CreateLoad(array_ptr);
+    auto index_num = unwrap_num(index);
+    auto element_ptr = builder.CreateGEP(node_ptr_type, real_array_ptr, index_num);
+    return builder.CreateLoad(element_ptr);
+}
+
+void llvm_context::modify_array(Value *v, llvm::Value *index, Value *operand) {
+    auto data_ptr_type = PointerType::getUnqual(struct_types.at("node_data"));
+    auto cast = builder.CreatePointerCast(v, data_ptr_type);
+    auto offset_0 = create_i32(0);
+    auto offset_1 = create_i32(2);
+    auto array_ptr = builder.CreateGEP(cast, { offset_0, offset_1 });
+    auto real_array_ptr = builder.CreateLoad(array_ptr);
+    auto index_num = unwrap_num(index);
+    auto element_ptr = builder.CreateGEP(node_ptr_type, real_array_ptr, index_num);
+    builder.CreateStore(operand, element_ptr);
+}
+
 Value* llvm_context::create_global(Function* f, Value* gf, Value* a) {
     auto alloc_global_f = functions.at("alloc_global");
     auto alloc_global_call = builder.CreateCall(alloc_global_f, { gf, a });
