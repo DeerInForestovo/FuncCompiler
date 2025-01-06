@@ -243,8 +243,8 @@ void generate_modify_llvm(llvm_context &ctx) {
     Value *index = ctx.create_pop(f);
     Value *operand = ctx.create_pop(f);
     ctx.modify_array(array, index, operand);
-    
-    ctx.create_pack(f, ctx.create_size(0), ctx.builder.getInt8(0));
+    ctx.create_push(f, array);
+
     ctx.create_update(f, ctx.create_size(0));
 
     ctx.builder.CreateRetVoid();

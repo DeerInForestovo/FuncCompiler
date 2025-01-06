@@ -113,7 +113,7 @@ void typecheck_program(
     io_type->insert_types(env);
 
     type_ptr io_arg_type = type_ptr(new type_var("IOArg"));
-    type_app *io_app = new type_app(type_ptr(new type_data("IO")));
+    type_app *io_app = new type_app(type_ptr(env->lookup_type("IO")));
     type_ptr io_type_app = type_ptr(io_app);
     io_app->arguments.push_back(io_arg_type);
 
@@ -310,7 +310,10 @@ void typecheck_program(
     prelude_func.insert("access");
 
     // modify part
-    type_ptr modify_right1 = type_ptr(new type_arr(array_arg_type, io_empty_type));
+    type_app *io_array_type_app = new type_app(type_ptr(env->lookup_type("IO")));
+    type_ptr io_array_type = type_ptr(io_array_type_app);
+    io_array_type_app->arguments.push_back(array_type_ptr);
+    type_ptr modify_right1 = type_ptr(new type_arr(array_arg_type, io_array_type));
     type_ptr modify_right2 = type_ptr(new type_arr(int_type_app, modify_right1));
     type_ptr modify_type = type_ptr(new type_arr(array_type_ptr, modify_right2));
     type_scheme_ptr modify_type_ptr = type_scheme_ptr(new type_scheme(std::move(modify_type)));
