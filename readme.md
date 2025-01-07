@@ -10,7 +10,7 @@
 
 **工具链：** Func 语言源代码 - Flex - Bison - （搭建 AST - 类型检查 - 生成 G-machine 代码 - 编译为 LLVM IR）- 在 LLVM-10 上运行。括号内为我们用 C++ 语言实现的部分。
 
-本仓库中，docs和res文件夹下的内容以及根目录下的test.sh仅用于半期检查，可以忽略。
+本仓库中，docs和res文件夹下的内容以及根目录下的test.sh仅用于半期检查，array.func, fib.func, test.func 为一些示例，可以忽略。
 
 **参考资料：**
 
