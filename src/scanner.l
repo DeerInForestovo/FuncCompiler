@@ -59,13 +59,13 @@ void yyerror(const char *s);
 ! { return yy::parser::make_NOT(); }
 \^ { return yy::parser::make_XOR(); }
 \< { return yy::parser::make_LT(); }
-\> { return yy::parser::make_GT(); }
+> { return yy::parser::make_GT(); }
 \<= { return yy::parser::make_LEQ(); }
-\>= { return yy::parser::make_GEQ(); }
+>= { return yy::parser::make_GEQ(); }
 == { return yy::parser::make_EQ(); }
 != { return yy::parser::make_NEQ(); }
 \<\< { return yy::parser::make_LMOVE(); }
-\>\> { return yy::parser::make_RMOVE(); }
+>> { return yy::parser::make_RMOVE(); }
 [0-9]*\.[0-9]+([eE][-+]?[0-9]+)? { 
     return yy::parser::make_FLOATNUMBER(atof(yytext)); 
 }
@@ -84,10 +84,10 @@ return { return yy::parser::make_RETURN(); }
 \[ { return yy::parser::make_OSQUARE(); }
 \] { return yy::parser::make_CSQUARE(); }
 ,  { return yy::parser::make_COMMA(); }
+: { return yy::parser::make_COLON(); }
 -> { return yy::parser::make_ARROW(); }
 \<- { return yy::parser::make_BIND(); }
 = { return yy::parser::make_EQUAL(); }
-_ { return yy::parser::make_INDEX(); }
 [a-z][a-zA-Z]* { return yy::parser::make_LID(std::string(yytext)); }
 [A-Z][a-zA-Z]* { return yy::parser::make_UID(std::string(yytext)); }
 

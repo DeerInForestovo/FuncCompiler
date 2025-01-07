@@ -94,5 +94,9 @@ struct type_mgr {
             const type_ptr& t) const;
     type_ptr resolve(type_ptr t, type_var*& var) const;
     bool bind(type_var* s, type_ptr t);  // return bind success or not
-    void find_free(const type_ptr& t, std::set<std::pair<std::string, bool>>& into) const;
+    void find_free(const type_ptr& t, 
+                   std::set<std::pair<std::string, bool>>& into,
+                   std::vector<type_ptr> &ancestors) const;
 };
+
+using type_mgr_ptr = std::shared_ptr<type_mgr>;

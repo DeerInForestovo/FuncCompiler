@@ -31,7 +31,6 @@ void yyerror(const std::string &msg) {
 %left PLUS MINUS
 %left TIMES DIVIDE BMOD
 %left CONNECT
-%left INDEX
 
 %token <float> FLOATNUMBER
 %token <int> INTEGER
@@ -50,6 +49,7 @@ void yyerror(const std::string &msg) {
 %token OSQUARE
 %token CSQUARE
 %token COMMA
+%token COLON
 %token ARROW
 %token BIND
 %token EQUAL
@@ -61,19 +61,19 @@ void yyerror(const std::string &msg) {
 %define api.token.constructor
 
 %type <std::vector<std::string>> lowercaseParams
-%type <std::vector<branch_ptr>> branches
+%type <std::vector<branch_ptr>> branches branchesDo
 %type <std::vector<constructor_ptr>> constructors
 %type <action_ptr> action bind
 %type <std::vector<action_ptr>> actions actionOrBinds
 %type <std::vector<parsed_type_ptr>> typeList
 %type <parsed_type_ptr> type nonArrowType typeListElement
-%type <ast_ptr> aAdd aMul case app appBase appIndex appConn appUniop aOr aAnd aBitor aXor aBitand aCmpeq aCmp aMove list
+%type <ast_ptr> aAdd aMul case app appBase appConn appUniop aOr aAnd aBitor aXor aBitand aCmpeq aCmp aMove list
 %type <definition_data_ptr> data 
 %type <definition_defn_ptr> defn
-%type <branch_ptr> branch
+%type <branch_ptr> branch branchDo
 %type <pattern_ptr> pattern
 %type <constructor_ptr> constructor
-%type <std::vector<ast_ptr>> termlist
+%type <std::vector<ast_ptr>> commaTermList colonTermList
 
 %start program
 
@@ -116,6 +116,17 @@ defn
         yyerror("Named a function with UID."); }
     ;
 
+branchesDo
+    : branchesDo branchDo { $$ = std::move($1); $$.push_back(std::move($2)); }
+    | branchDo { $$ = std::vector<branch_ptr>(); $$.push_back(std::move($1));}
+    ;
+
+branchDo
+    : pattern ARROW DO OCURLY actions CCURLY
+        { $$ = branch_ptr(new branch(std::move($1), ast_ptr(new ast_do(std::move($5))))); }
+    | pattern ARROW DO OCURLY actions error { $$ = branch_ptr(new branch(std::move($1), ast_ptr(new ast_do(std::move($5))))); yyerror("Unmatched '{'."); }
+    ;
+
 actions
     : actionOrBinds action { $$ = std::move($1); $$.push_back(std::move($2)); }
     ;
@@ -132,6 +143,8 @@ bind
 action
     : OCURLY aOr CCURLY { $$ = action_ptr(new action_exec(std::move($2))); }
     | RETURN OCURLY aOr CCURLY { $$ = action_ptr(new action_return(std::move($3))); }
+    | CASE aOr OF OCURLY branchesDo CCURLY 
+        { $$ = action_ptr(new action_exec(ast_ptr(new ast_case(std::move($2), std::move($5))))); }
     | OCURLY error CCURLY { yyerror("Illegal expr."); $$ = action_ptr(new action_exec(ast_ptr(new ast_int(0)))); }
     | RETURN OCURLY error CCURLY { yyerror("Illegal expr."); $$ = action_ptr(new action_return(ast_ptr(new ast_int(0)))); }
     ;
@@ -229,11 +242,7 @@ appUniop  // Apply union-operators
     | appConn { $$ = std::move($1); }
 
 appConn  // Connect two lists
-    : appConn CONNECT appIndex { $$ = ast_ptr(new ast_binop(CONN, std::move($1), std::move($3))); }
-    | appIndex { $$ = std::move($1); }
-
-appIndex  // Index from a list
-    : appIndex INDEX appBase { $$ = ast_ptr(new ast_binop(INDEX, std::move($1), std::move($3))); }
+    : appConn CONNECT appBase { $$ = ast_ptr(new ast_binop(CONN, std::move($1), std::move($3))); }
     | appBase { $$ = std::move($1); }
 
 appBase
@@ -271,6 +280,9 @@ pattern
     : LID { $$ = pattern_ptr(new pattern_var(std::move($1))); }
     | UID lowercaseParams
         { $$ = pattern_ptr(new pattern_constr(std::move($1), std::move($2))); }
+    | OSQUARE CSQUARE { $$ = pattern_ptr(new pattern_constr("_Nil", std::vector<std::string>())); }
+    | OSQUARE LID COLON LID CSQUARE 
+        { $$ = pattern_ptr(new pattern_constr("_Cons", std::vector<std::string> { std::move($2), std::move($4) })); }
     ;
 
 data
@@ -313,11 +325,17 @@ typeList
 
 list
     : OSQUARE CSQUARE { $$ = ast_ptr(new ast_list(std::vector<ast_ptr>())); }
-    | OSQUARE termlist COMMA CSQUARE { $$ = ast_ptr(new ast_list(std::move($2))); }
-    | OSQUARE termlist COMMA error { $$ = ast_ptr(new ast_list(std::move($2))); yyerror("Unmatched '['."); }
+    | OSQUARE commaTermList CSQUARE { $$ = ast_ptr(new ast_list(std::move($2))); }
+    | OSQUARE colonTermList CSQUARE { $$ = ast_ptr(new ast_list_colon(std::move($2))); }
+    | OSQUARE commaTermList error { $$ = ast_ptr(new ast_list(std::move($2))); yyerror("Unmatched '['."); }
     ;
 
-termlist
+commaTermList
     : aOr { $$ = std::vector<ast_ptr>(); $$.push_back(std::move($1)); }
-    | termlist COMMA aOr { $$ = std::move($1); $$.push_back(std::move($3)); }
+    | commaTermList COMMA aOr { $$ = std::move($1); $$.push_back(std::move($3)); }
+    ;
+
+colonTermList
+    : aOr COLON aOr { $$ = std::vector<ast_ptr>(); $$.push_back(std::move($1)); $$.push_back(std::move($3)); }
+    | colonTermList COLON aOr { $$ = std::move($1); $$.push_back(std::move($3)); }
     ;

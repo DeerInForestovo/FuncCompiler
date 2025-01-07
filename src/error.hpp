@@ -19,3 +19,12 @@ struct unification_error : public type_error {
         : left(std::move(l)), right(std::move(r)), 
             type_error("failed to unify types") {}
 };
+
+struct unexpected_error : std::exception {
+    std::string description;
+
+    unexpected_error(std::string d)
+        : description(std::move(d)) {}
+
+    const char* what() const noexcept override;
+};

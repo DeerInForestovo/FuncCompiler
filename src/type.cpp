@@ -134,6 +134,10 @@ void type_mgr::unify(type_ptr l, type_ptr r) {
             unify(*left_it, *right_it);
             left_it++, right_it++;
         }
+        // Not sure whether this is needed.
+        if (left_it != lapp->arguments.end() ||
+                right_it != rapp->arguments.end())
+            throw unification_error(l, r);
         return;
     }
 
@@ -191,17 +195,26 @@ bool type_mgr::bind(type_var* s, type_ptr t) {
     return true;
 }
 
-void type_mgr::find_free(const type_ptr& t, std::set<std::pair<std::string, bool>>& into) const {
+void type_mgr::find_free(const type_ptr& t, 
+                         std::set<std::pair<std::string, bool>>& into, 
+                         std::vector<type_ptr> &ancestors) const {
+    if (std::find(ancestors.begin(), ancestors.end(), t) != ancestors.end())
+        throw unexpected_error("type_mgr::find_free: invalid recursion.");
+    
     type_var* var;
     type_ptr resolved = resolve(t, var);
 
     if(var) {
         into.emplace(var->name, var->num_type);
     } else if(type_arr* arr = dynamic_cast<type_arr*>(resolved.get())) {
-        find_free(arr->left, into);
-        find_free(arr->right, into);
+        ancestors.push_back(t);
+        find_free(arr->left, into, ancestors);
+        find_free(arr->right, into, ancestors);
+        ancestors.pop_back();
     } else if(type_app* app = dynamic_cast<type_app*>(resolved.get())) {
-        find_free(app->constructor, into);
-        for(auto& arg : app->arguments) find_free(arg, into);
+        ancestors.push_back(t);
+        find_free(app->constructor, into, ancestors);
+        for(auto& arg : app->arguments) find_free(arg, into, ancestors);
+        ancestors.pop_back();
     }
 }
