@@ -1,7 +1,0 @@
-defn aPlusB = do {
-    defn a <- {readInt}
-    defn b <- {readInt}
-    defn c <- return {a + b}
-    {print c}
-    return {c}
-}

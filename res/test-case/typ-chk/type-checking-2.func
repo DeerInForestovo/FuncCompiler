@@ -1,5 +1,0 @@
-defn get a b = {a_b}
-
-defn funA = {get [1, 2, 3,] 1 == 2}
-
-defn funB = {get (get ["hello", "world",] 1) 1 == 'o'}

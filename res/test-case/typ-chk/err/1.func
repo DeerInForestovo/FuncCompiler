@@ -1,5 +1,0 @@
-defn foo a = {a + 1}
-
-defn wrong = {foo foo 1}  # functions are left-associated
-
-defn correct = {foo (foo 1)}

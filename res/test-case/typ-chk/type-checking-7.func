@@ -1,9 +1,0 @@
-data Color = { R, G, B }
-
-defn main color = {
-    case color of {
-        R -> { 1 }
-        G -> { 2 }
-        B -> { 3 }
-    }
-}
